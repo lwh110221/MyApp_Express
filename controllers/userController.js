@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
+const svgCaptcha = require('svg-captcha');
 
 exports.register = async (req, res) => {
   try {
@@ -218,12 +219,21 @@ exports.updateAvatar = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
   try {
-    const { oldPassword, newPassword } = req.body;
+    const { oldPassword, newPassword, captcha } = req.body;
+    const userId = req.userData.userId;
+
+    // 验证验证码
+    if (!captcha || captcha.toLowerCase() !== req.session.captcha) {
+      return res.status(400).json({ message: '验证码错误' });
+    }
+
+    // 清除已使用的验证码
+    req.session.captcha = null;
 
     // 获取用户当前密码
     const [users] = await db.execute(
       'SELECT password FROM users WHERE id = ?',
-      [req.userData.userId]
+      [userId]
     );
 
     if (users.length === 0) {
@@ -242,7 +252,7 @@ exports.changePassword = async (req, res) => {
     // 更新密码
     await db.execute(
       'UPDATE users SET password = ? WHERE id = ?',
-      [hashedPassword, req.userData.userId]
+      [hashedPassword, userId]
     );
 
     res.json({ message: '密码修改成功' });
@@ -269,4 +279,20 @@ exports.getPoints = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: '服务器错误' });
   }
+};
+
+// 生成验证码
+exports.generateCaptcha = (req, res) => {
+  const captcha = svgCaptcha.create({
+    size: 4, // 验证码长度
+    noise: 2, // 干扰线条数
+    color: true, // 验证码字符颜色
+    background: '#f0f0f0' // 背景色
+  });
+  
+  // 将验证码存入 session
+  req.session.captcha = captcha.text.toLowerCase();
+  
+  res.type('svg');
+  res.status(200).send(captcha.data);
 }; 

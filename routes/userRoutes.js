@@ -30,4 +30,7 @@ router.put('/password', auth, userController.changePassword);
 // 获取用户积分（需要认证）
 router.get('/points', auth, userController.getPoints);
 
+// 生成验证码
+router.get('/captcha', userController.generateCaptcha)
+
 module.exports = router; 
