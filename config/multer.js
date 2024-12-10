@@ -4,21 +4,23 @@ const path = require('path');
 // 配置存储
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'public/uploads/avatars') // 确保这个目录存在
+    // 根据上传类型选择不同的目录
+    const uploadType = req.path.includes('avatar') ? 'avatars' : 'moments';
+    cb(null, `public/uploads/${uploadType}`);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname))
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const fileType = req.path.includes('avatar') ? 'avatar' : 'moment';
+    cb(null, `${fileType}-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
 });
 
 // 文件过滤器
 const fileFilter = (req, file, cb) => {
-  // 只接受图片文件
   if (file.mimetype.startsWith('image/')) {
-    cb(null, true)
+    cb(null, true);
   } else {
-    cb(new Error('只能上传图片文件！'), false)
+    cb(new Error('只能上传图片文件！'), false);
   }
 };
 

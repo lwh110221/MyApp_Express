@@ -132,3 +132,24 @@ CREATE TABLE `news_images` (
     FOREIGN KEY (`news_id`) REFERENCES `news`(`id`) ON DELETE CASCADE,
     INDEX `idx_news_id` (`news_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 创建用户动态表
+CREATE TABLE `user_moments` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '动态唯一标识',
+    `user_id` BIGINT NOT NULL COMMENT '发布动态的用户ID',
+    `content` TEXT COMMENT '动态文字内容',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 创建动态图片表(支持一条动态多张图片)
+CREATE TABLE `moment_images` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '图片唯一标识',
+    `moment_id` BIGINT NOT NULL COMMENT '关联的动态ID',
+    `image_url` VARCHAR(255) NOT NULL COMMENT '图片URL',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+    FOREIGN KEY (`moment_id`) REFERENCES `user_moments`(`id`) ON DELETE CASCADE,
+    INDEX `idx_moment_id` (`moment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

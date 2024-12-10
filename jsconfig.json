@@ -1,0 +1,5 @@
+{
+    "compilerOptions": {
+      "noImplicitAny": false // 允许隐式any类型
+  }
+}
