@@ -16,7 +16,18 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // 安全性设置
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: {
+    policy: 'cross-origin'
+  },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'blob:', '*'],
+      connectSrc: ["'self'", process.env.CLIENT_URL || 'http://localhost:5173']
+    }
+  }
+}));
 
 // 启用 gzip 压缩
 app.use(compression());
@@ -44,8 +55,18 @@ app.use(session({
 }));
 
 // 配置 CORS
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',');
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: function(origin, callback) {
+    // 允许没有origin的请求（比如同源请求）
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('不允许的跨域请求'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -57,8 +78,12 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
-  maxAge: '1d', // 缓存1天
-  etag: true
+  maxAge: process.env.STATIC_CACHE_MAX_AGE || '1d',
+  etag: true,
+  setHeaders: function (res, path, stat) {
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.set('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+  }
 }));
 
 // API 路由
