@@ -11,9 +11,11 @@ const captchaRoutes = require('./routes/captchaRoutes');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// 配置 session 中间件，必须在其他中间件之前
+// 配置 session 中间件
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: process.env.SESSION_SECRET || (() => {
+    throw new Error('SESSION_SECRET environment variable is required');
+  })(),
   resave: false,
   saveUninitialized: true,
   cookie: { 
