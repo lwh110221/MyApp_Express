@@ -6,6 +6,7 @@ const session = require('express-session')
 
 const userRoutes = require('./routes/userRoutes');
 const momentRoutes = require('./routes/momentRoutes');
+const captchaRoutes = require('./routes/captchaRoutes');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -37,6 +38,9 @@ app.use('/api/users', userRoutes);
 
 // 动态相关路由
 app.use('/api/moments', momentRoutes);
+
+// 验证码相关路由
+app.use('/api/captcha', captchaRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {

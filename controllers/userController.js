@@ -219,16 +219,8 @@ exports.updateAvatar = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
   try {
-    const { oldPassword, newPassword, captcha } = req.body;
+    const { oldPassword, newPassword } = req.body;
     const userId = req.userData.userId;
-
-    // 验证验证码
-    if (!captcha || captcha.toLowerCase() !== req.session.captcha) {
-      return res.status(400).json({ message: '验证码错误' });
-    }
-
-    // 清除已使用的验证码
-    req.session.captcha = null;
 
     // 获取用户当前密码
     const [users] = await db.execute(
