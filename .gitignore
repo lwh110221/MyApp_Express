@@ -2,3 +2,19 @@
 node_modules
 .env
 logs/
+
+# 忽略 public/uploads 下的所有文件
+/public/uploads/*
+
+# 不忽略 public/uploads 文件夹和其子文件夹
+!/public/uploads/
+!/public/uploads/avatars/
+!/public/uploads/moments/
+
+# 忽略 public/uploads 子文件夹中的所有文件
+/public/uploads/avatars/*
+/public/uploads/moments/*
+
+# 保留 .gitkeep 文件以保持文件夹结构
+!/public/uploads/avatars/.gitkeep
+!/public/uploads/moments/.gitkeep
