@@ -1,6 +1,6 @@
+.env
 /.DS_Store
 node_modules
-.env
 logs/
 
 # 忽略 public/uploads 下的所有文件
