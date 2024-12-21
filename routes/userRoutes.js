@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 const upload = require('../config/multer');
 
 // 用户注册
-router.post('/register', userController.register);
+router.post('/register', captchaController.verifyCaptcha, userController.register);
 
 // 用户登录
 router.post('/login', userController.login);
