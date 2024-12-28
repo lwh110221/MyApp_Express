@@ -2,6 +2,7 @@
 /.DS_Store
 node_modules
 logs/
+.cursorrules
 
 # 忽略 public/uploads 下的所有文件
 /public/uploads/*
