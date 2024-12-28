@@ -1,4 +1,4 @@
-const db = require('../config/database');
+const { pool } = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
@@ -10,12 +10,12 @@ exports.register = async (req, res) => {
     const { username, email, password } = req.body;
 
     // 检查用户名和邮箱是否已存在
-    const [existingUser] = await db.execute(
+    const [existingUsers] = await pool.query(
       'SELECT id FROM users WHERE username = ? OR email = ?',
       [username, email]
     );
 
-    if (existingUser.length > 0) {
+    if (existingUsers.length > 0) {
       return res.status(400).json({ message: '用户名或邮箱已存在' });
     }
 
@@ -23,13 +23,13 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 创建用户
-    const [result] = await db.execute(
-      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+    const [result] = await pool.query(
+      'INSERT INTO users (username, email, password, status) VALUES (?, ?, ?, 1)',
       [username, email, hashedPassword]
     );
 
     // 创建用户资料
-    await db.execute(
+    await pool.query(
       'INSERT INTO user_profiles (user_id) VALUES (?)',
       [result.insertId]
     );
@@ -46,8 +46,8 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     // 获取用户信息
-    const [users] = await db.execute(
-      'SELECT * FROM users WHERE email = ?',
+    const [users] = await pool.query(
+      'SELECT * FROM users WHERE email = ? AND status = 1',
       [email]
     );
 
@@ -88,8 +88,8 @@ exports.login = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    const [users] = await db.execute(
-      `SELECT u.id, u.username, u.email, u.points, u.created_at,
+    const [users] = await pool.query(
+      `SELECT u.id, u.username, u.email, u.points, u.status, u.created_at,
               up.bio, up.profile_picture
        FROM users u
        LEFT JOIN user_profiles up ON u.id = up.user_id
@@ -116,20 +116,20 @@ exports.updateProfile = async (req, res) => {
     const { bio } = req.body;
 
     // 先检查是否已存在记录
-    const [existingProfile] = await db.execute(
+    const [existingProfile] = await pool.query(
       'SELECT id FROM user_profiles WHERE user_id = ?',
       [req.userData.userId]
     );
 
     if (existingProfile.length === 0) {
       // 如果不存在则插入新记录
-      await db.execute(
+      await pool.query(
         'INSERT INTO user_profiles (user_id, bio) VALUES (?, ?)',
         [req.userData.userId, bio]
       );
     } else {
       // 如果存在则更新
-      await db.execute(
+      await pool.query(
         'UPDATE user_profiles SET bio = ? WHERE user_id = ?',
         [bio, req.userData.userId]
       );
@@ -151,26 +151,26 @@ exports.updateAvatar = async (req, res) => {
     const avatarUrl = `/uploads/avatars/${req.file.filename}`;
 
     // 获取旧头像路径
-    const [oldAvatar] = await db.execute(
+    const [oldAvatar] = await pool.query(
       'SELECT profile_picture FROM user_profiles WHERE user_id = ?',
       [req.userData.userId]
     );
 
     // 检查是否已存在记录
-    const [existingProfile] = await db.execute(
+    const [existingProfile] = await pool.query(
       'SELECT id FROM user_profiles WHERE user_id = ?',
       [req.userData.userId]
     );
 
     if (existingProfile.length === 0) {
       // 如果不存在则插入新记录
-      await db.execute(
+      await pool.query(
         'INSERT INTO user_profiles (user_id, profile_picture) VALUES (?, ?)',
         [req.userData.userId, avatarUrl]
       );
     } else {
       // 如果存在则更新
-      await db.execute(
+      await pool.query(
         'UPDATE user_profiles SET profile_picture = ? WHERE user_id = ?',
         [avatarUrl, req.userData.userId]
       );
@@ -229,7 +229,7 @@ exports.changePassword = async (req, res) => {
     const userId = req.userData.userId;
 
     // 获取用户当前密码
-    const [users] = await db.execute(
+    const [users] = await pool.query(
       'SELECT password FROM users WHERE id = ?',
       [userId]
     );
@@ -248,7 +248,7 @@ exports.changePassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // 更新密码
-    await db.execute(
+    await pool.query(
       'UPDATE users SET password = ? WHERE id = ?',
       [hashedPassword, userId]
     );
@@ -263,7 +263,7 @@ exports.changePassword = async (req, res) => {
 // 新增：获取用户积分
 exports.getPoints = async (req, res) => {
   try {
-    const [users] = await db.execute(
+    const [users] = await pool.query(
       'SELECT points FROM users WHERE id = ?',
       [req.userData.userId]
     );

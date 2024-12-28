@@ -6,6 +6,7 @@ CREATE TABLE `users` (
     `password` VARCHAR(255) NOT NULL COMMENT '用户密码，不能为空',
     `email` VARCHAR(255) UNIQUE NOT NULL COMMENT '用户邮箱，具有唯一性，不能为空',
     `points` INT DEFAULT 0 COMMENT '用户积分，默认值为0',
+    `status` TINYINT DEFAULT 1 COMMENT '用户状态：1-正常，0-禁用',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '用户账号创建时间，默认取当前时间',
     INDEX `idx_username` (`username`),
     INDEX `idx_email` (`email`)
@@ -41,3 +42,124 @@ CREATE TABLE `moment_images` (
     FOREIGN KEY (`moment_id`) REFERENCES `user_moments`(`id`) ON DELETE CASCADE,
     INDEX `idx_moment_id` (`moment_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 创建管理员表
+CREATE TABLE `admins` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '管理员唯一标识',
+    `username` VARCHAR(255) UNIQUE NOT NULL COMMENT '管理员用户名',
+    `password` VARCHAR(255) NOT NULL COMMENT '管理员密码',
+    `email` VARCHAR(255) UNIQUE NOT NULL COMMENT '管理员邮箱',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    `last_login` TIMESTAMP NULL COMMENT '最后登录时间',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_admin_username` (`username`),
+    INDEX `idx_admin_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 角色表
+CREATE TABLE IF NOT EXISTS roles (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL COMMENT '角色名称',
+    code VARCHAR(50) NOT NULL COMMENT '角色编码',
+    description VARCHAR(200) COMMENT '角色描述',
+    status TINYINT(1) DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色表';
+
+-- 权限表
+CREATE TABLE IF NOT EXISTS permissions (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL COMMENT '权限名称',
+    code VARCHAR(50) NOT NULL COMMENT '权限编码',
+    description VARCHAR(200) COMMENT '权限描述',
+    status TINYINT(1) DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限表';
+
+-- 管理员角色关联表
+CREATE TABLE IF NOT EXISTS admin_roles (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    admin_id BIGINT NOT NULL COMMENT '管理员ID',
+    role_id BIGINT NOT NULL COMMENT '角色ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_admin_role (admin_id, role_id),
+    FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员角色关联表';
+
+-- 角色权限关联表
+CREATE TABLE IF NOT EXISTS role_permissions (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    role_id BIGINT NOT NULL COMMENT '角色ID',
+    permission_id BIGINT NOT NULL COMMENT '权限ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_role_permission (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色权限关联表';
+
+-- 初始化超级管理员角色
+INSERT INTO roles (name, code, description) VALUES 
+('超级管理员', 'super_admin', '系统超级管理员，拥有所有权限');
+('管理员', 'admin', '系统管理员，拥有部分权限');
+
+-- 初始化基础权限
+INSERT INTO permissions (name, code, description) VALUES 
+('管理员列表', 'admin:list', '查看管理员列表'),
+('创建管理员', 'admin:create', '创建新管理员'),
+('更新管理员', 'admin:update', '更新管理员信息'),
+('删除管理员', 'admin:delete', '删除管理员'),
+('用户列表', 'user:list', '查看用户列表'),
+('用户详情', 'user:detail', '查看用户详情'),
+('更新用户', 'user:update', '更新用户信息'),
+('删除用户', 'user:delete', '删除用户'),
+('用户统计', 'user:stats', '查看用户统计数据'),
+('动态列表', 'moment:list', '查看动态列表'),
+('删除动态', 'moment:delete', '删除动态'),
+('动态统计', 'moment:stats', '查看动态统计'),
+('日志列表', 'log:list', '查看操作日志'),
+('日志统计', 'log:stats', '查看日志统计'),
+('管理日志', 'log:clean', '清理历史日志');
+
+-- 为超级管理员角色分配所有权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 1, id FROM permissions;
+
+-- 创建超级管理员账号
+INSERT INTO admins (username, password, email, status) VALUES 
+('lwhadmin', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'admin@example.com', 1);
+
+-- 为超级管理员账号分配超级管理员角色
+INSERT INTO admin_roles (admin_id, role_id) VALUES (1, 1);
+
+-- 创建操作日志表
+CREATE TABLE `admin_operation_logs` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '日志ID',
+    `admin_id` BIGINT NOT NULL COMMENT '管理员ID',
+    `operation_type` VARCHAR(50) NOT NULL COMMENT '操作类型',
+    `operation_desc` TEXT COMMENT '操作描述',
+    `ip_address` VARCHAR(50) COMMENT '操作IP',
+    `request_data` TEXT COMMENT '请求数据',
+    `response_data` TEXT COMMENT '响应数据',
+    `status_code` INT COMMENT 'HTTP状态码',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    FOREIGN KEY (`admin_id`) REFERENCES `admins`(`id`),
+    INDEX `idx_admin_operation_admin_id` (`admin_id`),
+    INDEX `idx_admin_operation_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员操作日志表';
+
+-- 插入测试用户数据
+INSERT INTO users (username, password, email, points, status) VALUES
+('testuser1', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'test1@example.com', 100, 1),
+('testuser2', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'test2@example.com', 200, 1);
+
+-- 插入用户资料
+INSERT INTO user_profiles (user_id, bio) VALUES
+(1, '这是测试用户1的简介'),
+(2, '这是测试用户2的简介');
+

@@ -11,6 +11,7 @@ const userRoutes = require('./routes/userRoutes');
 const momentRoutes = require('./routes/momentRoutes');
 const captchaRoutes = require('./routes/captchaRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -90,6 +91,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
 app.use('/api/users', userRoutes);
 app.use('/api/moments', momentRoutes);
 app.use('/api/captcha', captchaRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 处理
 app.use((req, res) => {
