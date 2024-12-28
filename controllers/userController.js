@@ -43,23 +43,23 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
     // 获取用户信息
     const [users] = await db.execute(
-      'SELECT * FROM users WHERE username = ?',
-      [username]
+      'SELECT * FROM users WHERE email = ?',
+      [email]
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ message: '用户名或密码错误' });
+      return res.status(401).json({ message: '邮箱或密码错误' });
     }
 
     const user = users[0];
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      return res.status(401).json({ message: '用户名或密码错误' });
+      return res.status(401).json({ message: '邮箱或密码错误' });
     }
 
     // 生成 JWT token
@@ -70,13 +70,19 @@ exports.login = async (req, res) => {
     );
 
     res.json({
-      token,
-      username: user.username,
-      email: user.email
+      success: true,
+      data: {
+        token,
+        username: user.username,
+        email: user.email
+      }
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: '服务器错误' });
+    res.status(500).json({ 
+      success: false,
+      message: '服务器错误' 
+    });
   }
 };
 

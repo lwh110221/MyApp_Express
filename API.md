@@ -14,6 +14,7 @@
 #### 1.1 用户注册
 ```http
 POST /users/register
+Content-Type: application/json
 ```
 
 **请求参数**
@@ -23,6 +24,16 @@ POST /users/register
 | email    | string | 是   | 邮箱     |
 | password | string | 是   | 密码     |
 | captcha  | string | 是   | 验证码   |
+
+**请求示例**
+```json
+{
+  "username": "test",
+  "email": "test@test.com",
+  "password": "123456",
+  "captcha": "####"
+}
+```
 
 **响应示例**
 ```json
@@ -35,13 +46,22 @@ POST /users/register
 #### 1.2 用户登录
 ```http
 POST /users/login
+Content-Type: application/json
 ```
 
 **请求参数**
 | 参数名   | 类型   | 必填 | 说明   |
 |----------|--------|------|--------|
-| username | string | 是   | 用户名 |
+| email    | string | 是   | 邮箱   |
 | password | string | 是   | 密码   |
+
+**请求示例**
+```json
+{
+  "email": "test@example.com",
+  "password": "Test123456"
+}
+```
 
 **响应示例**
 ```json
@@ -58,10 +78,8 @@ POST /users/login
 #### 1.3 获取用户信息
 ```http
 GET /users/profile
+Authorization: Bearer <token>
 ```
-
-**请求头**
-- `Authorization: Bearer <token>`
 
 **响应示例**
 ```json
@@ -84,17 +102,26 @@ GET /users/profile
 #### 2.1 发布动态
 ```http
 POST /moments
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
 ```
-
-**请求头**
-- `Authorization: Bearer <token>`
-- `Content-Type: multipart/form-data`
 
 **请求参数**
 | 参数名  | 类型   | 必填 | 说明                    |
 |---------|--------|------|-------------------------|
 | content | string | 是   | 动态内容                |
 | images  | file[] | 否   | 图片文件，最多9张，每张≤5MB |
+
+**请求示例（Form Data）**
+```json
+{
+  "content": "这是一条测试动态",
+  "images": [
+    "file1.jpg",
+    "file2.jpg"
+  ]
+}
+```
 
 **响应示例**
 ```json
@@ -117,11 +144,9 @@ POST /moments
 
 #### 2.2 获取动态列表
 ```http
-GET /moments/user/:userId?
+GET /moments/user/:userId?page=1&limit=10
+Authorization: Bearer <token>
 ```
-
-**请求头**
-- `Authorization: Bearer <token>`
 
 **查询参数**
 | 参数名 | 类型   | 必填 | 说明             | 默认值 |
@@ -158,10 +183,13 @@ GET /moments/user/:userId?
 #### 2.3 删除动态
 ```http
 DELETE /moments/:momentId
+Authorization: Bearer <token>
 ```
 
-**请求头**
-- `Authorization: Bearer <token>`
+**请求示例**
+| key | value |
+|-----|-------|
+| momentId | 1 |
 
 **响应示例**
 ```json
@@ -194,16 +222,21 @@ GET /captcha/generate
 #### 4.1 更新用户信息
 ```http
 PUT /users/profile
+Authorization: Bearer <token>
+Content-Type: application/json
 ```
-
-**请求头**
-- `Authorization: Bearer <token>`
 
 **请求参数**
 | 参数名 | 类型   | 必填 | 说明     |
 |--------|--------|------|----------|
 | bio    | string | 否   | 用户简介 |
-| email  | string | 否   | 邮箱     |
+
+**请求示例**
+```json
+{
+  "bio": "这是我的新简介",
+}
+```
 
 **响应示例**
 ```json
@@ -211,8 +244,7 @@ PUT /users/profile
   "success": true,
   "data": {
     "username": "test_user",
-    "email": "new_email@example.com",
-    "bio": "新的用户简介"
+    "bio": "这是我的新简介"
   }
 }
 ```
@@ -220,16 +252,19 @@ PUT /users/profile
 #### 4.2 更新用户头像
 ```http
 PUT /users/profile/avatar
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
 ```
-
-**请求头**
-- `Authorization: Bearer <token>`
-- `Content-Type: multipart/form-data`
 
 **请求参数**
 | 参数名 | 类型 | 必填 | 说明           |
 |--------|------|------|----------------|
 | avatar | file | 是   | 头像文件，≤2MB |
+
+**请求示例（Form Data）**
+```
+avatar: (binary)profile.jpg
+```
 
 **响应示例**
 ```json
@@ -244,10 +279,9 @@ PUT /users/profile/avatar
 #### 4.3 修改密码
 ```http
 PUT /users/password
+Authorization: Bearer <token>
+Content-Type: application/json
 ```
-
-**请求头**
-- `Authorization: Bearer <token>`
 
 **请求参数**
 | 参数名      | 类型   | 必填 | 说明     |
@@ -255,6 +289,15 @@ PUT /users/password
 | oldPassword | string | 是   | 原密码   |
 | newPassword | string | 是   | 新密码   |
 | captcha     | string | 是   | 验证码   |
+
+**请求示例**
+```json
+{
+  "oldPassword": "OldTest123456",
+  "newPassword": "NewTest123456",
+  "captcha": "1234"
+}
+```
 
 **响应示例**
 ```json
@@ -267,14 +310,15 @@ PUT /users/password
 #### 4.4 获取用户积分
 ```http
 GET /users/points
+Authorization: Bearer <token>
 ```
-
-**请求头**
-- `Authorization: Bearer <token>`
 
 **响应示例**
 ```json
 {
-  "points": 100,
+  "success": true,
+  "data": {
+    "points": 100
+  }
 }
 ``` 
