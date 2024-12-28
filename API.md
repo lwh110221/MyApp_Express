@@ -169,3 +169,112 @@ DELETE /moments/:momentId
   "success": true,
   "message": "动态已删除"
 } 
+```
+
+### 3. 验证码模块
+
+#### 3.1 生成验证码
+```http
+GET /captcha/generate
+```
+
+**响应示例**
+```json
+{
+  "success": true,
+  "data": {
+    "captchaId": "unique_captcha_id",
+    "captchaImage": "base64_encoded_image"
+  }
+}
+```
+
+### 4. 用户扩展功能
+
+#### 4.1 更新用户信息
+```http
+PUT /users/profile
+```
+
+**请求头**
+- `Authorization: Bearer <token>`
+
+**请求参数**
+| 参数名 | 类型   | 必填 | 说明     |
+|--------|--------|------|----------|
+| bio    | string | 否   | 用户简介 |
+| email  | string | 否   | 邮箱     |
+
+**响应示例**
+```json
+{
+  "success": true,
+  "data": {
+    "username": "test_user",
+    "email": "new_email@example.com",
+    "bio": "新的用户简介"
+  }
+}
+```
+
+#### 4.2 更新用户头像
+```http
+PUT /users/profile/avatar
+```
+
+**请求头**
+- `Authorization: Bearer <token>`
+- `Content-Type: multipart/form-data`
+
+**请求参数**
+| 参数名 | 类型 | 必填 | 说明           |
+|--------|------|------|----------------|
+| avatar | file | 是   | 头像文件，≤2MB |
+
+**响应示例**
+```json
+{
+  "success": true,
+  "data": {
+    "profile_picture": "http://example.com/new_avatar.jpg"
+  }
+}
+```
+
+#### 4.3 修改密码
+```http
+PUT /users/password
+```
+
+**请求头**
+- `Authorization: Bearer <token>`
+
+**请求参数**
+| 参数名      | 类型   | 必填 | 说明     |
+|-------------|--------|------|----------|
+| oldPassword | string | 是   | 原密码   |
+| newPassword | string | 是   | 新密码   |
+| captcha     | string | 是   | 验证码   |
+
+**响应示例**
+```json
+{
+  "success": true,
+  "message": "密码修改成功"
+}
+```
+
+#### 4.4 获取用户积分
+```http
+GET /users/points
+```
+
+**请求头**
+- `Authorization: Bearer <token>`
+
+**响应示例**
+```json
+{
+  "points": 100,
+}
+``` 
