@@ -163,3 +163,62 @@ INSERT INTO user_profiles (user_id, bio) VALUES
 (1, '这是测试用户1的简介'),
 (2, '这是测试用户2的简介');
 
+-- 创建新闻分类表
+CREATE TABLE `news_categories` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '分类ID',
+    `name` VARCHAR(50) NOT NULL COMMENT '分类名称',
+    `code` VARCHAR(50) NOT NULL COMMENT '分类编码',
+    `sort_order` INT DEFAULT 0 COMMENT '排序顺序',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY `uk_code` (`code`),
+    INDEX `idx_sort` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='新闻分类表';
+
+-- 创建新闻文章表
+CREATE TABLE `news_articles` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '文章ID',
+    `category_id` BIGINT NOT NULL COMMENT '分类ID',
+    `title` VARCHAR(255) NOT NULL COMMENT '文章标题',
+    `summary` VARCHAR(500) COMMENT '文章摘要',
+    `content` LONGTEXT NOT NULL COMMENT '文章内容（富文本格式）',
+    `cover_image` VARCHAR(255) COMMENT '封面图片URL',
+    `author` VARCHAR(50) NOT NULL COMMENT '作者',
+    `source` VARCHAR(100) COMMENT '来源',
+    `view_count` INT DEFAULT 0 COMMENT '浏览次数',
+    `is_featured` TINYINT DEFAULT 0 COMMENT '是否热门：0-否，1-是',
+    `is_published` TINYINT DEFAULT 0 COMMENT '是否发布：0-否，1-是',
+    `publish_time` TIMESTAMP NULL COMMENT '发布时间',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    `created_by` BIGINT NOT NULL COMMENT '创建人ID',
+    `updated_by` BIGINT COMMENT '更新人ID',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (`category_id`) REFERENCES `news_categories`(`id`),
+    FOREIGN KEY (`created_by`) REFERENCES `admins`(`id`),
+    FOREIGN KEY (`updated_by`) REFERENCES `admins`(`id`),
+    INDEX `idx_category` (`category_id`),
+    INDEX `idx_featured` (`is_featured`),
+    INDEX `idx_published` (`is_published`),
+    INDEX `idx_publish_time` (`publish_time`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='新闻文章表';
+
+-- 添加新闻管理相关权限
+INSERT INTO permissions (name, code, description) VALUES 
+('新闻分类管理', 'news:category:manage', '管理新闻分类（增删改查）'),
+('新闻文章管理', 'news:article:manage', '管理新闻文章（增删改查）'),
+('新闻发布管理', 'news:publish', '发布或下线新闻文章');
+
+-- 为超级管理员角色分配新闻管理权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 1, id FROM permissions WHERE code LIKE 'news:%';
+
+-- 初始化默认新闻分类
+INSERT INTO news_categories (name, code, sort_order) VALUES 
+('最新资讯', 'latest', 1),
+('热点资讯', 'hot', 2),
+('政策资讯', 'policy', 3),
+('每周周刊', 'weekly', 4);
+
