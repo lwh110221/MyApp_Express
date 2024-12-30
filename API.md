@@ -1,63 +1,103 @@
 # API 文档
 
-作者：罗文浩
+## 基础信息
 
-## 接口说明
+- **基础URL**: `http://127.0.0.1:3000/api`
+- **认证方式**: Bearer Token
+- **请求头格式**: `Authorization: Bearer <token>`
+- **响应格式**: JSON
+- **文件上传**: `multipart/form-data`
 
-- 基础URL: `http://127.0.0.1:3000/api`
-- 认证方式: Bearer Token (`Authorization: Bearer <token>`)
-- 响应格式: JSON
-- 文件上传: `multipart/form-data`
+## 状态码说明
 
-## 接口列表
+| 状态码 | 说明 |
+|--------|------|
+| 200 | 请求成功 |
+| 201 | 创建成功 |
+| 400 | 请求参数错误 |
+| 401 | 未授权 |
+| 403 | 权限不足 |
+| 404 | 资源不存在 |
+| 500 | 服务器错误 |
 
-### 1. 用户模块
+## 通用响应格式
 
-#### 1.1 用户注册
-```http
-POST /users/register
-Content-Type: application/json
-```
-
-**请求参数**
-| 参数名   | 类型   | 必填 | 说明     |
-|----------|--------|------|----------|
-| username | string | 是   | 用户名   |
-| email    | string | 是   | 邮箱     |
-| password | string | 是   | 密码     |
-| captcha  | string | 是   | 验证码   |
-
-**请求示例**
+### 成功响应
 ```json
 {
-  "username": "test",
-  "email": "test@test.com",
-  "password": "123456",
-  "captcha": "####"
+  "code": 200,
+  "data": {
+    // 响应数据
+  },
+  "message": "操作成功"
 }
 ```
 
-**响应示例**
+### 错误响应
 ```json
 {
-  "success": true,
+  "code": 400,
+  "message": "错误信息描述"
+}
+```
+
+## 1. 用户模块
+
+### 1.1 用户注册
+
+#### 请求信息
+- **接口**: `/users/register`
+- **方法**: `POST`
+- **Content-Type**: `application/json`
+
+#### 请求参数
+| 参数名   | 类型   | 必填 | 说明     | 验证规则 |
+|----------|--------|------|----------|----------|
+| username | string | 是   | 用户名   | 长度3-20，只能包含字母、数字、下划线 |
+| email    | string | 是   | 邮箱     | 有效的邮箱格式 |
+| password | string | 是   | 密码     | 长度6-20，必须包含大小写字母和数字 |
+| captcha  | string | 是   | 验证码   | 长度4，不区分大小写 |
+
+#### 请求示例
+```json
+{
+  "username": "test_user",
+  "email": "test@example.com",
+  "password": "Test123456",
+  "captcha": "1234"
+}
+```
+
+#### 响应示例（成功）
+```json
+{
+  "code": 200,
   "message": "注册成功"
 }
 ```
 
-#### 1.2 用户登录
-```http
-POST /users/login
-Content-Type: application/json
+#### 响应示例（失败）
+```json
+{
+  "code": 400,
+  "message": "用户名或邮箱已存在"
+}
 ```
 
-**请求参数**
-| 参数名   | 类型   | 必填 | 说明   |
-|----------|--------|------|--------|
-| email    | string | 是   | 邮箱   |
-| password | string | 是   | 密码   |
+### 1.2 用户登录
 
-**请求示例**
+#### 请求信息
+- **接口**: `/users/login`
+- **方法**: `POST`
+- **Content-Type**: `application/json`
+
+#### 请求参数
+| 参数名   | 类型   | 必填 | 说明   | 验证规则 |
+|----------|--------|------|--------|----------|
+| email    | string | 是   | 邮箱   | 有效的邮箱格式 |
+| password | string | 是   | 密码   | 长度6-20 |
+
+#### 请求示例
 ```json
 {
   "email": "test@example.com",
@@ -65,7 +105,7 @@ Content-Type: application/json
 }
 ```
 
-**响应示例**
+#### 响应示例（成功）
 ```json
 {
   "success": true,
@@ -77,1297 +117,652 @@ Content-Type: application/json
 }
 ```
 
-#### 1.3 获取用户信息
-```http
-GET /users/profile
-Authorization: Bearer <token>
-```
-
-**响应示例**
+#### 响应示例（失败）
 ```json
 {
-  "success": true,
-  "data": {
-    "id": "user_id",
-    "username": "test_user",
-    "email": "test@example.com",
-    "points": 100,
-    "created_at": "2024-12-21T10:00:00Z",
-    "bio": "用户简介",
-    "profile_picture": "http://example.com/avatar.jpg"
-  }
+  "success": false,
+  "message": "邮箱或密码错误"
 }
 ```
 
-### 2. 动态模块
+### 1.3 获取用户信息
 
-#### 2.1 发布动态
-```http
-POST /moments
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-```
+#### 请求信息
+- **接口**: `/users/profile`
+- **方法**: `GET`
+- **需要认证**: 是
+- **请求头**: `Authorization: Bearer <token>`
 
-**请求参数**
-| 参数名  | 类型   | 必填 | 说明                    |
-|---------|--------|------|-------------------------|
-| content | string | 是   | 动态内容                |
-| images  | file[] | 否   | 图片文件，最多9张，每张≤5MB |
-
-**请求示例（Form Data）**
+#### 响应示例
 ```json
 {
-  "content": "这是一条测试动态",
-  "images": [
-    "file1.jpg",
-    "file2.jpg"
-  ]
+  "id": 1,
+  "username": "test_user",
+  "email": "test@example.com",
+  "points": 100,
+  "status": 1,
+  "created_at": "2024-01-20T10:00:00Z",
+  "bio": "用户简介",
+  "profile_picture": "/uploads/avatars/default-avatar.jpg"
 }
 ```
 
-**响应示例**
+### 1.4 更新用户资料
+
+#### 请求信息
+- **接口**: `/users/profile`
+- **方法**: `PUT`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+- **请求头**: `Authorization: Bearer <token>`
+
+#### 请求参数
+| 参数名 | 类型   | 必填 | 说明     | 验证规则 |
+|--------|--------|------|----------|----------|
+| bio    | string | 是   | 个人简介 | 长度0-200 |
+
+#### 请求示例
 ```json
 {
-  "success": true,
+  "bio": "这是我的个人简介"
+}
+```
+
+#### 响应示例
+```json
+{
+  "message": "个人资料更新成功"
+}
+```
+
+### 1.5 更新用户头像
+
+#### 请求信息
+- **接口**: `/users/profile/avatar`
+- **方法**: `PUT`
+- **需要认证**: 是
+- **Content-Type**: `multipart/form-data`
+- **请求头**: `Authorization: Bearer <token>`
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明     | 验证规则 |
+|--------|------|------|----------|----------|
+| avatar | file | 是   | 头像文件 | ≤2MB，格式：jpg,jpeg,png |
+
+#### 响应示例
+```json
+{
+  "message": "头像更新成功",
+  "avatarUrl": "/uploads/avatars/avatar-1705743258999.jpg"
+}
+```
+
+### 1.6 修改密码
+
+#### 请求信息
+- **接口**: `/users/password`
+- **方法**: `PUT`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+- **请求头**: `Authorization: Bearer <token>`
+
+#### 请求参数
+| 参数名      | 类型   | 必填 | 说明   | 验证规则 |
+|-------------|--------|------|--------|----------|
+| oldPassword | string | 是   | 原密码 | 长度6-20 |
+| newPassword | string | 是   | 新密码 | 长度6-20，必须包含大小写字母和数字 |
+
+#### 请求示例
+```json
+{
+  "oldPassword": "OldTest123456",
+  "newPassword": "NewTest123456"
+}
+```
+
+#### 响应示例（成功）
+```json
+{
+  "message": "密码修改成功"
+}
+```
+
+#### 响应示例（失败）
+```json
+{
+  "message": "原密码错误"
+}
+```
+
+## 2. 动态模块
+
+### 2.1 发布动态
+
+#### 请求信息
+- **接口**: `/moments`
+- **方法**: `POST`
+- **Content-Type**: `multipart/form-data`
+
+#### 请求参数
+| 参数名  | 类型   | 必填 | 说明                                |
+|---------|--------|------|-------------------------------------|
+| content | string | 是   | 动态内容，最大长度1000字           |
+| images  | file[] | 否   | 图片文件，最多9张，每张不超过5MB |
+
+#### 请求示例
+```http
+POST /api/moments
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="content"
+
+今天天气真好，和朋友一起去爬山了！#户外运动# 
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="photo1.jpg"
+Content-Type: image/jpeg
+
+[二进制图片数据]
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="photo2.jpg"
+Content-Type: image/jpeg
+
+[二进制图片数据]
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+```
+
+#### 响应示例
+```json
+{
+  "code": 200,
   "data": {
-    "id": "moment_id",
-    "content": "动态内容",
-    "created_at": "2024-12-21T10:00:00Z",
-    "username": "test_user",
-    "user_id": "user_id",
-    "profile_picture": "http://example.com/avatar.jpg",
+    "id": 1,
+    "user_id": 10001,
+    "content": "今天天气真好，和朋友一起去爬山了！#户外运动#",
     "images": [
-      "http://example.com/image1.jpg",
-      "http://example.com/image2.jpg"
-    ]
+      "/uploads/moments/202401/photo1-123456.jpg",
+      "/uploads/moments/202401/photo2-123456.jpg"
+    ],
+    "like_count": 0,
+    "comment_count": 0,
+    "created_at": "2024-01-20T10:00:00Z"
   }
 }
 ```
 
-#### 2.2 获取动态列表
+### 2.2 获取动态列表
+
+#### 请求信息
+- **接口**: `/moments`
+- **方法**: `GET`
+
+#### 查询参数
+| 参数名    | 类型   | 必填 | 说明                           | 默认值 |
+|-----------|--------|------|--------------------------------|---------|
+| page      | number | 否   | 页码                           | 1       |
+| limit     | number | 否   | 每页条数                       | 10      |
+| user_id   | number | 否   | 指定用户的动态                 | -       |
+| following | number | 否   | 1=只看关注的人的动态           | 0       |
+
+#### 请求示例
 ```http
-GET /moments/user/:userId?page=1&limit=10
-Authorization: Bearer <token>
+GET /api/moments?page=1&limit=10&following=1
 ```
 
-**查询参数**
-| 参数名 | 类型   | 必填 | 说明             | 默认值 |
-|--------|--------|------|------------------|--------|
-| page   | number | 否   | 页码             | 1      |
-| limit  | number | 否   | 每页条数         | 10     |
-
-**响应示例**
+#### 响应示例
 ```json
 {
-  "success": true,
+  "code": 200,
   "data": {
     "items": [
       {
-        "id": "moment_id",
-        "content": "动态内容",
-        "created_at": "2024-12-21T10:00:00Z",
-        "username": "test_user",
-        "user_id": "user_id",
-        "profile_picture": "http://example.com/avatar.jpg",
-        "images": ["http://example.com/image1.jpg"]
+        "id": 1,
+        "user_id": 10001,
+        "user": {
+          "id": 10001,
+          "nickname": "张三",
+          "avatar": "/uploads/avatars/user-123456.jpg"
+        },
+        "content": "今天天气真好，和朋友一起去爬山了！#户外运动#",
+        "images": [
+          "/uploads/moments/202401/photo1-123456.jpg",
+          "/uploads/moments/202401/photo2-123456.jpg"
+        ],
+        "like_count": 5,
+        "comment_count": 2,
+        "is_liked": true,
+        "created_at": "2024-01-20T10:00:00Z"
       }
     ],
     "pagination": {
       "total": 100,
       "page": 1,
-      "limit": 10,
-      "total_pages": 10
+      "limit": 10
     }
   }
 }
 ```
 
-#### 2.3 删除动态
+### 2.3 获取动态详情
+
+#### 请求信息
+- **接口**: `/moments/:momentId`
+- **方法**: `GET`
+
+#### 路径参数
+| 参数名   | 类型   | 说明    |
+|----------|--------|---------|
+| momentId | number | 动态ID  |
+
+#### 请求示例
 ```http
-DELETE /moments/:momentId
-Authorization: Bearer <token>
+GET /api/moments/1
 ```
 
-**请求示例**
-| key | value |
-|-----|-------|
-| momentId | 1 |
-
-**响应示例**
+#### 响应示例
 ```json
 {
-  "success": true,
-  "message": "动态已删除"
-} 
-```
-
-### 3. 验证码模块
-
-#### 3.1 生成验证码
-```http
-GET /captcha/generate
-```
-
-**响应示例**
-```json
-{
-  "success": true,
+  "code": 200,
   "data": {
-    "captchaId": "unique_captcha_id",
-    "captchaImage": "base64_encoded_image"
-  }
-}
-```
-
-### 4. 用户扩展功能
-
-#### 4.1 更新用户信息
-```http
-PUT /users/profile
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-**请求参数**
-| 参数名 | 类型   | 必填 | 说明     |
-|--------|--------|------|----------|
-| bio    | string | 否   | 用户简介 |
-
-**请求示例**
-```json
-{
-  "bio": "这是我的新简介",
-}
-```
-
-**响应示例**
-```json
-{
-  "success": true,
-  "data": {
-    "username": "test_user",
-    "bio": "这是我的新简介"
-  }
-}
-```
-
-#### 4.2 更新用户头像
-```http
-PUT /users/profile/avatar
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-```
-
-**请求参数**
-| 参数名 | 类型 | 必填 | 说明           |
-|--------|------|------|----------------|
-| avatar | file | 是   | 头像文件，≤2MB |
-
-**请求示例（Form Data）**
-```
-avatar: (binary)profile.jpg
-```
-
-**响应示例**
-```json
-{
-  "success": true,
-  "data": {
-    "profile_picture": "http://example.com/new_avatar.jpg"
-  }
-}
-```
-
-#### 4.3 修改密码
-```http
-PUT /users/password
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-**请求参数**
-| 参数名      | 类型   | 必填 | 说明     |
-|-------------|--------|------|----------|
-| oldPassword | string | 是   | 原密码   |
-| newPassword | string | 是   | 新密码   |
-| captcha     | string | 是   | 验证码   |
-
-**请求示例**
-```json
-{
-  "oldPassword": "OldTest123456",
-  "newPassword": "NewTest123456",
-  "captcha": "1234"
-}
-```
-
-**响应示例**
-```json
-{
-  "success": true,
-  "message": "密码修改成功"
-}
-```
-
-#### 4.4 获取用户积分
-```http
-GET /users/points
-Authorization: Bearer <token>
-```
-
-**响应示例**
-```json
-{
-  "success": true,
-  "data": {
-    "points": 100
-  }
-}
-```
-
-### 5. 管理员模块 API
-
-### 认证相关
-
-#### 管理员登录
-- **接口**：`POST /admin/auth/login`
-- **描述**：管理员账号登录
-- **请求头**：
-  ```http
-  Content-Type: application/json
-  ```
-- **请求体**：
-  ```json
-  {
-    "username": "string", // 用户名
-    "password": "string"  // 密码
-  }
-  ```
-- **响应**：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "token": "string",
-      "admin": {
-        "id": "number",
-        "username": "string",
-        "email": "string",
-        "roles": [
-          {
-            "name": "string",
-            "description": "string"
-          }
-        ]
-      }
-    }
-  }
-  ```
-
-#### 获取管理员信息
-- **接口**：`GET /admin/auth/profile`
-- **描述**：获取当前登录管理员的详细信息
-- **请求头**：
-  ```
-  Authorization: Bearer <token>
-  ```
-- **响应**：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "id": "number",
-      "username": "string",
-      "email": "string",
-      "status": "number",
-      "created_at": "string",
-      "last_login": "string",
-      "roles": [
-        {
-          "name": "string",
-          "description": "string"
-        }
-      ],
-      "permissions": [
-        {
-          "name": "string",
-          "code": "string"
-        }
-      ]
-    }
-  }
-  ```
-
-#### 修改密码
-- **接口**：`PUT /admin/auth/password`
-- **描述**：修改当前管理员密码
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  Content-Type: application/json
-  ```
-- **请求体**：
-  ```json
-  {
-    "oldPassword": "string",
-    "newPassword": "string"  // 必须含大小写字母和数字，长度至少6位
-  }
-  ```
-- **响应**：
-  ```json
-  {
-    "code": 200,
-    "message": "密码修改成功"
-  }
-  ```
-
-### 用户管理
-
-#### 获取用户列表
-- **接口**：`GET /admin/users`
-- **描述**：获取用户列表，支持分页和条件筛选
-- **请求头**：
-  ```
-  Authorization: Bearer <token>
-  ```
-- **查询参数**：
-  - `page`: 页码（默认1）
-  - `limit`: 每页数量（默认10）
-  - `username`: 用户名搜索
-  - `email`: 邮箱搜索
-  - `startDate`: 开始日期
-  - `endDate`: 结束日期
-- **带参数请求示例**
-  ```http
-  GET http://127.0.0.1:3000/api/admin/users?page=1&limit=10&username=test
-  ```
-- **响应**：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "total": "number",
-      "page": "number",
-      "limit": "number",
-      "users": [
-        {
-          "id": "number",
-          "username": "string",
-          "email": "string",
-          "points": "number",
-          "created_at": "string",
-          "bio": "string",
-          "profile_picture": "string"
-        }
-      ]
-    }
-  }
-  ```
-
-#### 获取用户详情
-- **接口**：`GET /admin/users/:userId`
-- **描述**：获取指定用户的详细信息
-- **请求头**：
-  ```
-  Authorization: Bearer <token>
-  ```
-- **响应**：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "id": "number",
-      "username": "string",
-      "email": "string",
-      "points": "number",
-      "created_at": "string",
-      "bio": "string",
-      "profile_picture": "string",
-      "recent_moments": [
-        {
-          "id": "number",
-          "content": "string",
-          "created_at": "string",
-          "images": ["string"]
-        }
-      ]
-    }
-  }
-  ```
-
-#### 修改用户状态
-- **接口**：`PUT /admin/users/:userId/status`
-- **描述**：启用或禁用用户
-- **请求头**：
-  ```
-  Authorization: Bearer <token>
-  ```
-- **请求体**：
-  ```json
-  {
-    "status": "boolean"  // true: 启用, false: 禁用
-  }
-  ```
-- **响应**：
-  ```json
-  {
-    "code": 200,
-    "message": "用户状态修改成功"
-  }
-  ```
-
-#### 删除用户
-- **接口**：`DELETE /admin/users/:userId`
-- **描述**：删除指定用户及其所有相关数据
-- **请求头**：
-  ```
-  Authorization: Bearer <token>
-  ```
-- **响应**：
-  ```json
-  {
-    "code": 200,
-    "message": "用户删除成功"
-  }
-  ```
-
-#### 获取用户统计数据
-- **接口**：`GET /admin/users/stats/overview`
-- **描述**：获取用户相关统计数据
-- **请求头**：
-  ```
-  Authorization: Bearer <token>
-  ```
-- **响应**：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "total_users": "number",
-      "today_new_users": "number",
-      "monthly_active_users": "number",
-      "growth_trend": [
-        {
-          "date": "string",
-          "count": "number"
-        }
-      ]
-    }
-  }
-  ```
-
-### 管理员管理
-
-#### 获取管理员列表
-- 请求路径：`GET /admin/admins`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 请求参数：
-  ```json
-  {
-    "page": "当前页码，默认1",
-    "limit": "每页数量，默认10",
-    "username": "管理员用户名（可选）",
-    "email": "管理员邮箱（可选）"
-  }
-  ```
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "items": [
-        {
-          "id": 1,
-          "username": "admin",
-          "email": "admin@example.com",
-          "status": 1,
-          "last_login": "2024-01-20 10:00:00",
-          "created_at": "2024-01-01 12:00:00",
-          "roles": ["超级管理员"]
-        }
-      ],
-      "pagination": {
-        "total": 1,
-        "page": 1,
-        "limit": 10
-      }
-    }
-  }
-  ```
-
-#### 创建管理员
-- 请求路径：`POST /admin/admins`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 请求体：
-  ```json
-  {
-    "username": "管理员用户名",
-    "email": "管理员邮箱",
-    "password": "密码（必须包含大小写字母和数字，长度不少于6位）",
-    "roleIds": [1, 2] // 角色ID数组
-  }
-  ```
-- 角色数组说明：
-  - 1: 超级管理员
-  - 2: 管理员
-- 响应示例：
-  ```json
-  {
-    "code": 201,
-    "message": "管理员创建成功"
-  }
-  ```
-
-#### 更新管理员状态
-- 请求路径：`PUT /admin/admins/:adminId/status`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 请求体：
-  ```json
-  {
-    "status": true // 或 false，启用或禁用管理员
-  }
-  ```
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "message": "管理员状态更新成功"
-  }
-  ```
-
-#### 更新管理员角色
-- 请求路径：`PUT /admin/admins/:adminId/roles`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 请求体：
-  ```json
-  {
-    "roleIds": [1, 2] // 新的角色ID数组
-  }
-  ```
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "message": "角色更新成功"
-  }
-  ```
-
-#### 删除管理员
-- 请求路径：`DELETE /admin/admins/:adminId`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "message": "管理员删除成功"
-  }
-  ```
-
-### 动态管理
-
-#### 获取动态列表
-- 请求路径：`GET /admin/moments`
-- 请求参数：
-  ```json
-  {
-    "page": "当前页码，默认1",
-    "limit": "每页数量，默认10",
-    "startDate": "开始日期（可选，YYYY-MM-DD）",
-    "endDate": "结束日期（可选，YYYY-MM-DD）"
-  }
-  ```
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "items": [
-        {
-          "id": 1,
-          "content": "动态内容",
-          "user_id": 1,
-          "username": "用户名",
-          "nickname": "用户昵称",
-          "created_at": "2024-01-20 10:00:00"
-        }
-      ],
-      "pagination": {
-        "total": 1,
-        "page": 1,
-        "limit": 10
-      }
-    }
-  }
-  ```
-
-#### 删除动态
-- 请求路径：`DELETE /admin/moments/:momentId`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 请求体需要在params中传递momentId
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "message": "动态删除成功"
-  }
-  ```
-
-#### 获取动态统计数据
-- 请求路径：`GET /admin/moments/stats/overview`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "total": 100,
-      "today": 5,
-      "month": 50,
-      "trend": [
-        {
-          "date": "2024-01-20",
-          "count": 5
-        }
-      ]
-    }
-  }
-  ```
-
-### 日志管理
-
-#### 获取操作日志列表
-- 请求路径：`GET /admin/logs`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 请求参数：
-  ```json
-  {
-    "page": "当前页码，默认1",
-    "limit": "每页数量，默认10",
-    "startDate": "开始日期（可选，YYYY-MM-DD）",
-    "endDate": "结束日期（可选，YYYY-MM-DD）"
-  }
-  ```
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "items": [
-        {
-          "id": 1,
-          "admin_id": 1,
-          "admin_username": "admin",
-          "operation_type": "创建用户",
-          "operation_desc": "创建了新用户",
-          "ip_address": "127.0.0.1",
-          "created_at": "2024-01-20 10:00:00"
-        }
-      ],
-      "pagination": {
-        "total": 1,
-        "page": 1,
-        "limit": 10
-      }
-    }
-  }
-  ```
-
-#### 获取日志统计数据
-- 请求路径：`GET /admin/logs/stats`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "total": 1000,
-      "today": 50,
-      "operationStats": [
-        {
-          "operation_type": "创建用户",
-          "count": 100
-        }
-      ],
-      "trend": [
-        {
-          "date": "2024-01-20",
-          "count": 50
-        }
-      ]
-    }
-  }
-  ```
-
-#### 清理日志
-- 请求路径：`POST /admin/logs/clean`
-- 请求头：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- 请求体：
-  ```json
-  {
-    "beforeDate": "2024-01-01" // 删除此日期之前的日志
-  }
-  ```
-- 响应示例：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "affectedRows": 100
+    "id": 1,
+    "user_id": 10001,
+    "user": {
+      "id": 10001,
+      "nickname": "张三",
+      "avatar": "/uploads/avatars/user-123456.jpg"
     },
-    "message": "日志清理成功"
-  }
-  ```
-
-### 6. 新闻资讯模块
-
-#### 6.1 新闻分类管理
-
-##### 获取新闻分类列表
-- **接口**：`GET /admin/news/categories`
-- **权限**：`news:category:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": [
+    "content": "今天天气真好，和朋友一起去爬山了！#户外运动#",
+    "images": [
+      "/uploads/moments/202401/photo1-123456.jpg",
+      "/uploads/moments/202401/photo2-123456.jpg"
+    ],
+    "like_count": 5,
+    "comment_count": 2,
+    "is_liked": true,
+    "created_at": "2024-01-20T10:00:00Z",
+    "comments": [
       {
         "id": 1,
-        "name": "最新资讯",
-        "code": "latest",
-        "sort_order": 1,
-        "status": 1,
-        "created_at": "2024-01-20T10:00:00.000Z",
-        "updated_at": "2024-01-20T10:00:00.000Z"
+        "user": {
+          "id": 10002,
+          "nickname": "李四",
+          "avatar": "/uploads/avatars/user-234567.jpg"
+        },
+        "content": "风景真不错！",
+        "created_at": "2024-01-20T10:05:00Z"
       }
     ]
   }
-  ```
+}
+```
 
-##### 创建新闻分类
-- **接口**：`POST /admin/news/categories`
-- **权限**：`news:category:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  Content-Type: application/json
-  ```
-- **请求体**：
-  ```json
-  {
-    "name": "分类名称",
-    "code": "category_code",
-    "sort_order": 0
+### 2.4 点赞/取消点赞动态
+
+#### 请求信息
+- **接口**: `/moments/:momentId/like`
+- **方法**: `POST`
+
+#### 路径参数
+| 参数名   | 类型   | 说明    |
+|----------|--------|---------|
+| momentId | number | 动态ID  |
+
+#### 请求示例
+```http
+POST /api/moments/1/like
+```
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "is_liked": true,
+    "like_count": 6
   }
-  ```
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "id": 1
+}
+```
+
+### 2.5 评论动态
+
+#### 请求信息
+- **接口**: `/moments/:momentId/comments`
+- **方法**: `POST`
+- **Content-Type**: `application/json`
+
+#### 路径参数
+| 参数名   | 类型   | 说明    |
+|----------|--------|---------|
+| momentId | number | 动态ID  |
+
+#### 请求参数
+| 参数名  | 类型   | 必填 | 说明                     |
+|---------|--------|------|--------------------------|
+| content | string | 是   | 评论内容，最大长度200字  |
+
+#### 请求示例
+```http
+POST /api/moments/1/comments
+Content-Type: application/json
+
+{
+  "content": "风景真不错！"
+}
+```
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "id": 1,
+    "user": {
+      "id": 10002,
+      "nickname": "李四",
+      "avatar": "/uploads/avatars/user-234567.jpg"
     },
-    "message": "新闻分类创建成功"
+    "content": "风景真不错！",
+    "created_at": "2024-01-20T10:05:00Z"
   }
-  ```
+}
+```
 
-##### 更新新闻分类
-- **接口**：`PUT /admin/news/categories/:categoryId`
-- **权限**：`news:category:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  Content-Type: application/json
-  ```
-- **请求体**：
-  ```json
-  {
-    "name": "更新后的分类名称",
-    "sort_order": 1,
-    "status": 1
-  }
-  ```
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "message": "新闻分类更新成功"
-  }
-  ```
+### 2.6 删除动态
 
-##### 删除新闻分类
-- **接口**：`DELETE /admin/news/categories/:categoryId`
-- **权限**：`news:category:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "message": "新闻分类删除成功"
-  }
-  ```
+#### 请求信息
+- **接口**: `/moments/:momentId`
+- **方法**: `DELETE`
 
-#### 6.2 新闻文章管理
+#### 路径参数
+| 参数名   | 类型   | 说明    |
+|----------|--------|---------|
+| momentId | number | 动态ID  |
 
-##### 获取新闻文章列表
-- **接口**：`GET /admin/news/articles`
-- **权限**：`news:article:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- **查询参数**：
-  - `page`: 页码（默认1）
-  - `limit`: 每页数量（默认10）
-  - `category_id`: 分类ID（可选）
-  - `is_published`: 发布状态（可选）
-  - `keyword`: 搜索关键词（可选）
-  - `is_featured`: 是否热门（可选）
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "total": 100,
-      "items": [
-        {
-          "id": 1,
-          "category_id": 1,
-          "category_name": "最新资讯",
-          "title": "文章标题",
-          "summary": "文章摘要",
-          "author": "作者",
-          "view_count": 0,
-          "is_featured": 0,
-          "is_published": 1,
-          "publish_time": "2024-01-20T10:00:00.000Z",
-          "created_at": "2024-01-20T10:00:00.000Z"
-        }
-      ]
-    }
-  }
-  ```
+#### 请求示例
+```http
+DELETE /api/moments/1
+```
 
-##### 获取新闻文章详情
-- **接口**：`GET /admin/news/articles/:articleId`
-- **权限**：`news:article:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- **请求参数**：
-  - `articleId`: 文章ID
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": {
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "删除成功"
+}
+```
+
+#### 注意事项
+1. 发布动态时：
+   - 图片格式支持：JPG、PNG、GIF
+   - 图片大小限制：每张不超过10MB
+   - 图片数量限制：最多9张
+   - 内容长度：1-1000字
+2. 评论限制：
+   - 内容长度：1-200字
+   - 需要登录才能评论
+3. 删除动态：
+   - 只能删除自己发布的动态
+   - 删除动态会同时删除相关的评论和点赞记录
+4. 图片上传：
+   - 上传的图片会自动压缩和裁剪
+   - 生成不同尺寸的缩略图
+   - 图片URL格式：/uploads/moments/YYYYMM/filename-{random}.ext
+5. 时间显示：
+   - 所有时间字段均使用 ISO 8601 格式的 UTC 时间
+
+## 3. 验证码模块
+
+### 3.1 生成验证码
+
+#### 请求信息
+- **接口**: `/captcha/generate`
+- **方法**: `GET`
+- **响应类型**: `image/svg+xml`
+
+#### 响应说明
+- 直接返回SVG格式的验证码图片
+- 验证码会存储在session中
+- 验证码长度为4位，不区分大小写
+- 包含2条干扰线
+- 背景色为#f0f0f0
+
+#### 使用说明
+1. 在img标签中直接使用该接口地址
+2. 验证码会在用户注册或其他需要验证的操作时使用
+3. 验证通过后会自动清除session中的验证码
+4. 建议在验证码显示区域提供刷新按钮，点击时重新调用该接口
+
+```html
+<img src="/api/captcha/generate" alt="验证码" onclick="this.src='/api/captcha/generate?t=' + new Date().getTime()">
+```
+
+## 4. 新闻模块（用户端）
+
+### 4.1 获取新闻分类
+
+#### 请求信息
+- **接口**: `/news/categories`
+- **方法**: `GET`
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": [
+    {
       "id": 1,
-      "category_id": 1,
-      "category_name": "最新资讯",
-      "title": "文章标题",
-      "summary": "文章摘要",
-      "content": "文章内容",
-      "cover_image": "封面图片URL",
-      "author": "作者",
-      "source": "来源",
-      "view_count": 0,
-      "is_featured": 0,
-      "is_published": 1,
-      "publish_time": "2024-01-20T10:00:00.000Z",
-      "created_at": "2024-01-20T10:00:00.000Z",
-      "updated_at": "2024-01-20T10:00:00.000Z",
-      "creator_name": "创建人"
+      "name": "最新资讯",
+      "code": "latest"
+    }
+  ]
+}
+```
+
+### 4.2 获取新闻列表
+
+#### 请求信息
+- **接口**: `/news/articles`
+- **方法**: `GET`
+
+#### 查询参数
+| 参数名      | 类型   | 必填 | 说明       | 默认值 |
+|-------------|--------|------|------------|---------|
+| page        | number | 否   | 页码       | 1       |
+| limit       | number | 否   | 每页条数   | 10      |
+| category_id | number | 否   | 分类ID     | -       |
+| keyword     | string | 否   | 搜索关键词 | -       |
+
+#### 请求示例
+```http
+GET /api/news/articles?page=1&limit=10&category_id=1&keyword=科技
+```
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "category_id": 1,
+        "category_name": "最新资讯",
+        "title": "文章标题",
+        "summary": "文章摘要",
+        "cover_image": "/uploads/news/cover-123456.jpg",
+        "author": "作者",
+        "view_count": 100,
+        "is_featured": 1,
+        "publish_time": "2024-01-20T10:00:00Z"
+      }
+    ],
+    "pagination": {
+      "total": 100,
+      "page": 1,
+      "limit": 10
     }
   }
-  ```
+}
+```
 
-##### 创建新闻文章
-- **接口**：`POST /admin/news/articles`
-- **权限**：`news:article:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  Content-Type: application/json
-  ```
-- **请求体**：
-  ```json
-  {
+### 4.3 获取新闻详情
+
+#### 请求信息
+- **接口**: `/news/articles/:articleId`
+- **方法**: `GET`
+
+#### 路径参数
+| 参数名    | 类型   | 说明    |
+|-----------|--------|---------|
+| articleId | number | 文章ID  |
+
+#### 请求示例
+```http
+GET /api/news/articles/1
+```
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "id": 1,
     "category_id": 1,
+    "category_name": "最新资讯",
     "title": "文章标题",
-    "summary": "文章摘要（可选）",
-    "content": "<p>这是一段测试内容</p>",  // 支持HTML格式或Quill Delta格式
-    "cover_image": "/uploads/news/cover.jpg",
+    "summary": "文章摘要",
+    "content": "文章内容",
+    "cover_image": "/uploads/news/cover-123456.jpg",
     "author": "作者",
     "source": "来源",
-    "is_featured": 0,
-    "is_published": 0
+    "view_count": 100,
+    "is_featured": 1,
+    "is_published": 1,
+    "publish_time": "2024-01-20T10:00:00Z",
+    "created_at": "2024-01-20T10:00:00Z",
+    "updated_at": "2024-01-20T10:00:00Z"
   }
-  ```
-- **Quill Delta格式示例**：
-  ```json
-  {
-    "category_id": 4,
-    "title": "测试测试",
-    "content": {
-      "ops": [
-        { "insert": "Hello " },
-        { "insert": "World", "attributes": { "bold": true } },
-        { "insert": "\n" },
-        { 
-          "insert": { 
-            "image": "###" 
-          }
-        }
-      ]
-    },
-    "author": "测试作者",  // 必需字段
-    "source": "测试来源",  // 可选字段
-    "is_featured": 0,     // 可选字段，默认 0
-    "is_published": 0     // 可选字段，默认 0
-  }
-  ```
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "id": 1
-    },
-    "message": "新闻文章创建成功"
-  }
-  ```
+}
+```
 
-##### 更新新闻文章
-- **接口**：`PUT /admin/news/articles/:articleId`
-- **权限**：`news:article:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  Content-Type: application/json
-  ```
-- **请求体**：
-  ```json
-  {
-    "category_id": 1,
-    "title": "更新后的标题",
-    "summary": "更新后的摘要",
-    "content": "更新后的内容",
-    "cover_image": "http://example.com/new_image.jpg",
-    "author": "新作者",
-    "source": "新来源",
-    "is_featured": true,
-    "is_published": true
-  }
-  ```
-- **更新文章Quill Delta格式示例**：
-  ```json
-  {
-    "category_id": 4,
-    "title": "测试测试",
-    "content": {
-      "ops": [
-        { "insert": "Hello " },
-        { "insert": "World", "attributes": { "bold": true } },
-        { "insert": "\n" },
-        { 
-          "insert": { 
-            "image": "###" 
-          }
-        }
-      ]
-    }
-    "author": "测试作者",  // 必需字段
-    "source": "测试来源",  // 可选字段
-    "is_featured": 0,     // 可选字段，默认 0
-    "is_published": 0     // 可选字段，默认 0
-  }
-  ```
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "message": "新闻文章更新成功"
-  }
-  ```
+### 4.4 获取热门新闻
 
-##### 删除新闻文章
-- **接口**：`DELETE /admin/news/articles/:articleId`
-- **权限**：`news:article:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  ```
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "message": "新闻文章删除成功"
-  }
-  ```
+#### 请求信息
+- **接口**: `/news/articles/featured`
+- **方法**: `GET`
 
-##### 更新文章发布状态
-- **接口**：`PUT /admin/news/articles/:articleId/publish`
-- **权限**：`news:publish`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  Content-Type: application/json
-  ```
-- **请求体**：
-  ```json
-  {
-    "is_published": 1  // 1: 发布, 0: 下线
-  }
-  ```
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "message": "文章已发布"  // 或 "文章已下线"
-  }
-  ```
+#### 查询参数
+| 参数名 | 类型   | 必填 | 说明     | 默认值 | 最大值 |
+|--------|--------|------|----------|---------|---------|
+| limit  | number | 否   | 返回数量 | 5       | 20      |
 
-##### 更新文章热门状态
-- **接口**：`PUT /admin/news/articles/:articleId/featured`
-- **权限**：`news:article:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  Content-Type: application/json
-  ```
-- **请求体**：
-  ```json
-  {
-    "is_featured": 1  // 1: 设为热门, 0: 取消热门
-  }
-  ```
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "message": "文章已设为热门"  // 或 "文章已取消热门"
-  }
-  ```
+#### 请求示例
+```http
+GET /api/news/articles/featured?limit=5
+```
 
-#### 6.3 图片上传
-
-##### 上传图片
-- **接口**：`POST /admin/news/upload`
-- **权限**：`news:article:manage`
-- **请求头**：
-  ```http
-  Authorization: Bearer <token>
-  Content-Type: multipart/form-data
-  ```
-- **请求参数**：
-  - Form Data:
-    - `image`: 图片文件
-  - 支持格式：jpeg, jpg, png, gif, webp
-  - 大小限制：5MB
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "message": "图片上传成功",
-    "data": {
-      "url": "/uploads/news/1705743258999-123456789.jpg"
-    }
-  }
-  ```
-
-#### 6.4 注意事项
-
-1. 所有请求都需要携带有效的管理员 token
-2. 图片上传使用 multipart/form-data 格式
-3. 其他请求使用 application/json 格式
-4. 文章内容支持两种格式：
-   - HTML 格式：直接传入 HTML 字符串
-   - Quill Delta 格式：传入 Quill 编辑器的 Delta 对象
-5. 图片支持两种上传方式：
-   - 单独上传：使用图片上传接口
-   - 内嵌到内容：直接在 content 中使用 base64 格式的图片，系统会自动处理并转换为文件
-6. 权限要求：
-   - `news:category:manage`: 分类管理权限
-   - `news:article:manage`: 文章管理权限
-   - `news:publish`: 文章发布权限
-
-### 7. 用户端新闻模块
-
-#### 7.1 获取新闻分类
-- **接口**：`GET /news/categories`
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": [
-      {
-        "id": 1,
-        "name": "最新资讯",
-        "code": "latest"
-      }
-    ]
-  }
-  ```
-
-#### 7.2 获取新闻列表
-- **接口**：`GET /news/articles`
-- **查询参数**：
-  - `page`: 页码（默认1）
-  - `limit`: 每页数量（默认10）
-  - `category_id`: 分类ID（可选）
-  - `keyword`: 搜索关键词（可选）
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": {
-      "items": [
-        {
-          "id": 1,
-          "category_id": 1,
-          "category_name": "最新资讯",
-          "title": "文章标题",
-          "summary": "文章摘要",
-          "cover_image": "封面图片URL",
-          "author": "作者",
-          "view_count": 100,
-          "is_featured": 1,
-          "publish_time": "2024-01-20T10:00:00.000Z"
-        }
-      ],
-      "pagination": {
-        "total": 100,
-        "page": 1,
-        "limit": 10
-      }
-    }
-  }
-  ```
-
-#### 7.3 获取新闻详情
-- **接口**：`GET /news/articles/:articleId`
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": {
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": [
+    {
       "id": 1,
-      "category_id": 1,
-      "category_name": "最新资讯",
-      "title": "文章标题",
+      "title": "热门文章标题",
       "summary": "文章摘要",
-      "content": "文章内容",
-      "cover_image": "封面图片URL",
-      "author": "作者",
-      "source": "来源",
-      "view_count": 100,
-      "publish_time": "2024-01-20T10:00:00.000Z"
+      "cover_image": "/uploads/news/cover-123456.jpg",
+      "view_count": 1000,
+      "publish_time": "2024-01-20T10:00:00Z",
+      "category_name": "最新资讯"
     }
-  }
-  ```
+  ]
+}
+```
 
-#### 7.4 获取热门新闻
-- **接口**：`GET /news/articles/featured`
-- **说明**：获取热门新闻列表，优先返回手动设置为热门的文章，如果数量不足则补充高浏览量文章
-- **查询参数**：
-  - `limit`: 返回数量（默认5，最大20）
-- **返回规则**：
-  1. 优先返回被设置为热门的文章（`is_featured = 1`）
-  2. 如果热门文章数量不足指定数量，则补充浏览量超过100的文章
-  3. 按发布时间降序排序热门文章，按浏览量降序排序高浏览量文章
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": [
-      {
-        "id": 1,
-        "title": "热门文章标题",
-        "summary": "文章摘要",
-        "cover_image": "封面图片URL",
-        "view_count": 1000,
-        "publish_time": "2024-01-20T10:00:00.000Z",
-        "category_name": "最新资讯",
-        "is_featured": 1
-      }
-    ]
-  }
-  ```
+### 4.5 获取相关新闻
 
-#### 7.5 获取相关新闻
-- **接口**：`GET /news/articles/:articleId/related`
-- **说明**：获取与指定文章相关的新闻推荐
-- **路径参数**：
-  - `articleId`: 当前文章ID
-- **查询参数**：
-  - `limit`: 返回数量（默认5，最大20）
-- **返回规则**：
-  1. 优先返回同分类下的文章
-     - 优先选择发布时间接近的文章
-     - 其次考虑浏览量较高的文章
-  2. 如果同分类文章数量不足，则补充其他分类的热门文章
-     - 补充的文章必须是热门文章或浏览量超过100
-     - 按浏览量降序排序
-  3. 排除当前正在查看的文章
-- **响应示例**：
-  ```json
-  {
-    "code": 200,
-    "data": [
-      {
-        "id": 2,
-        "title": "相关文章标题",
-        "summary": "文章摘要",
-        "cover_image": "封面图片URL",
-        "view_count": 50,
-        "publish_time": "2024-01-20T10:00:00.000Z",
-        "category_name": "最新资讯"
-      }
-    ]
-  }
-  ```
+#### 请求信息
+- **接口**: `/news/articles/:articleId/related`
+- **方法**: `GET`
 
-#### 7.6 注意事项
+#### 路径参数
+| 参数名    | 类型   | 说明   |
+|-----------|--------|--------|
+| articleId | number | 文章ID |
+
+#### 查询参数
+| 参数名 | 类型   | 必填 | 说明     | 默认值 | 最大值 |
+|--------|--------|------|----------|---------|---------|
+| limit  | number | 否   | 返回数量 | 5       | 20      |
+
+#### 请求示例
+```http
+GET /api/news/articles/1/related?limit=5
+```
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": [
+    {
+      "id": 2,
+      "title": "相关文章标题",
+      "summary": "文章摘要",
+      "cover_image": "/uploads/news/cover-123456.jpg",
+      "view_count": 50,
+      "publish_time": "2024-01-20T10:00:00Z",
+      "category_name": "最新资讯"
+    }
+  ]
+}
+```
+
+#### 相关文章获取规则
+1. 优先返回同分类下的文章：
+   - 优先选择发布时间接近的文章
+   - 其次考虑浏览量较高的文章
+2. 如果同分类文章数量不足，则补充其他分类的热门文章：
+   - 补充的文章必须是热门文章（`is_featured = 1`）或浏览量超过100
+   - 按浏览量降序排序
+3. 排除当前正在查看的文章
+4. 只返回已发布的文章（`is_published = 1`）
+
+#### 注意事项
 1. 所有接口只返回已发布的文章（`is_published = 1`）
 2. 查看文章详情时会自动增加浏览次数
 3. 热门新闻的条件：
    - 被设置为热门（`is_featured = 1`）
    - 或浏览次数超过100
-4. 相关新闻是基于同分类推荐
+4. 相关新闻是基于同分类和发布时间推荐
+5. 所有时间字段均使用 ISO 8601 格式的 UTC 时间
+
+## 错误码说明
+
+| 错误码 | 说明 |
+|--------|------|
+| 1001   | 用户名已存在 |
+| 1002   | 邮箱已注册 |
+| 1003   | 验证码错误 |
+| 1004   | 密码错误 |
+| 1005   | 账号不存在 |
+| 2001   | 文件上传失败 |
+| 2002   | 文件格式不支持 |
+| 2003   | 文件大小超限 |
+| 3001   | 没有操作权限 |
+| 3002   | Token已过期 |
+| 3003   | Token无效 |
+
+## 注意事项
+
+1. 所有时间字段均使用 ISO 8601 格式的 UTC 时间
+2. 文件上传大小限制：
+   - 头像：≤2MB
+   - 动态图片：≤5MB/张，最多9张
+   - 新闻封面：≤5MB
+3. 支持的图片格式：jpg、jpeg、png、gif、webp
+4. 分页接口均支持以下参数：
+   - page：页码，从1开始
+   - limit：每页条数，默认10
+5. 所有涉及ID的接口均需要进行权限验证
+6. 用户密码必须包含大小写字母和数字，长度6-20位
