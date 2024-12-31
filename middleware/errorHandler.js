@@ -1,54 +1,39 @@
-const { AppError, ValidationError } = require('../utils/errors');
-const logger = require('../config/logger');
+const ResponseUtil = require('../utils/responseUtil');
 
-// 错误处理中间件
+/**
+ * 统一错误处理中间件
+ */
 const errorHandler = (err, req, res, next) => {
-    logger.error('Error:', {
-        message: err.message,
-        stack: err.stack,
-        path: req.path,
-        method: req.method
-    });
+  // 记录错误日志
+  console.error('Error:', err);
 
-    // 处理验证错误
-    if (err instanceof ValidationError) {
-        return res.status(400).json({
-            code: 400,
-            message: err.message,
-            errors: err.errors
-        });
-    }
+  // 处理验证错误
+  if (err.name === 'ValidationError') {
+    return ResponseUtil.error(res, err.message, 400);
+  }
 
-    // 处理已知的操作错误
-    if (err instanceof AppError) {
-        return res.status(err.statusCode).json({
-            code: err.statusCode,
-            message: err.message
-        });
-    }
+  // 处理JWT认证错误
+  if (err.name === 'UnauthorizedError') {
+    return ResponseUtil.error(res, '未授权访问', 401);
+  }
 
-    // 处理JWT错误
-    if (err.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-            code: 401,
-            message: '无效的认证令牌'
-        });
-    }
+  // 处理文件上传错误
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return ResponseUtil.error(res, '文件大小超出限制', 400);
+  }
 
-    if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({
-            code: 401,
-            message: '认证令牌已过期'
-        });
-    }
+  // 处理数据库错误
+  if (err.code === 'ER_DUP_ENTRY') {
+    return ResponseUtil.error(res, '数据已存在', 400);
+  }
 
-    // 处理其他未知错误
-    return res.status(500).json({
-        code: 500,
-        message: process.env.NODE_ENV === 'production' 
-            ? '服务器内部错误' 
-            : err.message
-    });
+  // 处理其他已知错误类型
+  if (err.status) {
+    return ResponseUtil.error(res, err.message, err.status);
+  }
+
+  // 处理未知错误
+  ResponseUtil.error(res, '服务器内部错误', 500);
 };
 
 module.exports = errorHandler; 

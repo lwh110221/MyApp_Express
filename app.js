@@ -13,6 +13,7 @@ const captchaRoutes = require('./routes/captchaRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const adminRoutes = require('./routes/admin');
 const newsRoutes = require('./routes/newsRoutes');
+const ResponseUtil = require('./utils/responseUtil');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -78,6 +79,20 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
+// 统一响应处理
+app.use((req, res, next) => {
+  res.success = (data, message) => {
+    ResponseUtil.success(res, data, message);
+  };
+  res.error = (message, code) => {
+    ResponseUtil.error(res, message, code);
+  };
+  res.page = (data) => {
+    ResponseUtil.page(res, data);
+  };
+  next();
+});
+
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
   maxAge: process.env.STATIC_CACHE_MAX_AGE || '1d',
@@ -97,7 +112,7 @@ app.use('/api/news', newsRoutes);
 
 // 404 处理
 app.use((req, res) => {
-  res.status(404).json({ message: '未找到请求的资源' });
+  ResponseUtil.error(res, '未找到请求的资源', 404);
 });
 
 // 错误处理中间件

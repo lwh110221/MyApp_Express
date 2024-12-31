@@ -3,7 +3,7 @@ const router = express.Router();
 const { query, param, body } = require('express-validator');
 const adminManageController = require('../../controllers/admin/adminManageController');
 const { checkPermission } = require('../../middleware/admin/authMiddleware');
-const validate = require('../../middleware/validator');
+const { validate } = require('../../middleware/validator');
 
 // 查询参数验证
 const listValidation = [

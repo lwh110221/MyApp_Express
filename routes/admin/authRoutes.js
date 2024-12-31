@@ -3,7 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const adminAuthController = require('../../controllers/admin/authController');
 const { verifyAdminToken } = require('../../middleware/admin/authMiddleware');
-const validate = require('../../middleware/validator');
+const { validate } = require('../../middleware/validator');
 
 // 登录验证规则
 const loginValidation = [

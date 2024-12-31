@@ -1,43 +1,62 @@
 /**
- * 统一的成功响应
- * @param {Object} res - Express响应对象
- * @param {*} data - 响应数据
- * @param {string} message - 成功消息
- * @param {number} code - 状态码
+ * 统一的响应工具类
  */
-exports.successResponse = (res, data = null, message = '操作成功', code = 200) => {
-    return res.status(code).json({
-        code,
-        success: true,
-        message,
-        data
-    });
-};
+class ResponseUtil {
+  /**
+   * 成功响应
+   * @param {Object} res - Express响应对象
+   * @param {*} data - 响应数据
+   * @param {string} message - 响应消息
+   * @param {number} code - 响应状态码
+   */
+  static success(res, data = null, message = '操作成功', code = 200) {
+    const response = {
+      code,
+      message
+    };
+    
+    if (data !== null) {
+      response.data = data;
+    }
+    
+    res.status(code).json(response);
+  }
 
-/**
- * 统一的错误响应
- * @param {Object} res - Express响应对象
- * @param {string} message - 错误消息
- * @param {number} code - 状态码
- */
-exports.errorResponse = (res, message = '操作失败', code = 500) => {
-    return res.status(code).json({
-        code,
-        success: false,
-        message
+  /**
+   * 错误响应
+   * @param {Object} res - Express响应对象
+   * @param {string} message - 错误消息
+   * @param {number} code - 错误状态码
+   */
+  static error(res, message = '操作失败', code = 400) {
+    res.status(code).json({
+      code,
+      message
     });
-};
+  }
 
-/**
- * 统一的验证错误响应
- * @param {Object} res - Express响应对象
- * @param {Array} errors - 验证错误数组
- */
-exports.validationErrorResponse = (res, errors) => {
-    return res.status(400).json({
-        code: 400,
-        success: false,
-        message: '请求参数验证失败',
-        errors: errors.array()
+  /**
+   * 分页数据响应
+   * @param {Object} res - Express响应对象
+   * @param {Array} list - 数据列表
+   * @param {number} total - 总数
+   * @param {number} page - 当前页码
+   * @param {number} pageSize - 每页大小
+   */
+  static page(res, { list, total, page, pageSize }) {
+    res.status(200).json({
+      code: 200,
+      data: {
+        list,
+        pagination: {
+          total,
+          page,
+          pageSize
+        }
+      },
+      message: '获取成功'
     });
-}; 
+  }
+}
+
+module.exports = ResponseUtil; 

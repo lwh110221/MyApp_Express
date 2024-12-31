@@ -3,7 +3,7 @@ const router = express.Router();
 const { query, param } = require('express-validator');
 const momentManageController = require('../../controllers/admin/momentManageController');
 const { checkPermission } = require('../../middleware/admin/authMiddleware');
-const validate = require('../../middleware/validator');
+const { validate } = require('../../middleware/validator');
 
 // 查询参数验证
 const listValidation = [
