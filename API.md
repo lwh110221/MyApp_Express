@@ -8,6 +8,34 @@
 - **响应格式**: JSON
 - **文件上传**: `multipart/form-data`
 
+### 认证说明
+
+#### Token 说明
+- Token 采用 JWT 格式
+- 有效期：24小时
+- 需要在每个需要认证的请求的 Header 中携带
+- 格式：`Authorization: Bearer eyJhbGciOiJIUzI1NiIs...`
+
+#### 需要认证的接口
+以下接口需要在请求头中携带有效的 Token：
+1. 用户信息相关：
+   - 获取用户信息
+   - 更新用户信息
+   - 更新头像
+   - 修改密码
+2. 动态相关：
+   - 发布动态
+   - 删除动态
+   - 点赞/取消点赞
+   - 评论动态
+3. 积分相关：
+   - 获取积分信息
+
+#### Token 过期处理
+- 当 Token 过期时，接口会返回 401 状态码
+- 此时需要重新登录获取新的 Token
+- 建议在前端做统一的 401 状态处理，跳转到登录页面
+
 ## 状态码说明
 
 | 状态码 | 说明 |
@@ -204,33 +232,44 @@
 - **方法**: `PUT`
 - **需要认证**: 是
 - **Content-Type**: `application/json`
-- **请求头**: `Authorization: Bearer <token>`
 
 #### 请求参数
-| 参数名      | 类型   | 必填 | 说明   | 验证规则 |
-|-------------|--------|------|--------|----------|
-| oldPassword | string | 是   | 原密码 | 长度6-20 |
-| newPassword | string | 是   | 新密码 | 长度6-20，必须包含大小写字母和数字 |
+| 参数名      | 类型   | 必填 | 说明     | 验证规则 |
+|-------------|--------|------|----------|----------|
+| oldPassword | string | 是   | 原密码   | 长度6-20 |
+| newPassword | string | 是   | 新密码   | 长度6-20，必须包含大小写字母和数字 |
+| captcha     | string | 是   | 验证码   | 长度4，不区分大小写 |
 
-#### 请求示例
+#### 响应示例
 ```json
 {
-  "oldPassword": "OldTest123456",
-  "newPassword": "NewTest123456"
-}
-```
-
-#### 响应示例（成功）
-```json
-{
+  "code": 200,
   "message": "密码修改成功"
 }
 ```
 
-#### 响应示例（失败）
+### 1.7 获取用户积分
+
+#### 请求信息
+- **接口**: `/users/points`
+- **方法**: `GET`
+- **需要认证**: 是
+
+#### 响应示例
 ```json
 {
-  "message": "原密码错误"
+  "code": 200,
+  "data": {
+    "points": 100,
+    "history": [
+      {
+        "id": 1,
+        "points": 10,
+        "type": "签到",
+        "created_at": "2024-01-20T10:00:00Z"
+      }
+    ]
+  }
 }
 ```
 
@@ -241,6 +280,7 @@
 #### 请求信息
 - **接口**: `/moments`
 - **方法**: `POST`
+- **需要认证**: 是
 - **Content-Type**: `multipart/form-data`
 
 #### 请求参数
@@ -263,50 +303,31 @@ Content-Disposition: form-data; name="images"; filename="photo1.jpg"
 Content-Type: image/jpeg
 
 [二进制图片数据]
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="images"; filename="photo2.jpg"
-Content-Type: image/jpeg
-
-[二进制图片数据]
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
-```
-
-#### 响应示例
-```json
-{
-  "code": 200,
-  "data": {
-    "id": 1,
-    "user_id": 10001,
-    "content": "今天天气真好，和朋友一起去爬山了！#户外运动#",
-    "images": [
-      "/uploads/moments/202401/photo1-123456.jpg",
-      "/uploads/moments/202401/photo2-123456.jpg"
-    ],
-    "like_count": 0,
-    "comment_count": 0,
-    "created_at": "2024-01-20T10:00:00Z"
-  }
-}
 ```
 
 ### 2.2 获取动态列表
 
 #### 请求信息
-- **接口**: `/moments`
+- **接口**: `/moments/user/:userId?`
 - **方法**: `GET`
+- **需要认证**: 是
+
+#### 路径参数
+| 参数名  | 类型   | 必填 | 说明                           |
+|---------|--------|------|--------------------------------|
+| userId  | number | 否   | 用户ID，不传则获取所有用户动态 |
 
 #### 查询参数
 | 参数名    | 类型   | 必填 | 说明                           | 默认值 |
 |-----------|--------|------|--------------------------------|---------|
 | page      | number | 否   | 页码                           | 1       |
 | limit     | number | 否   | 每页条数                       | 10      |
-| user_id   | number | 否   | 指定用户的动态                 | -       |
 | following | number | 否   | 1=只看关注的人的动态           | 0       |
 
 #### 请求示例
 ```http
-GET /api/moments?page=1&limit=10&following=1
+GET /api/moments/user/1?page=1&limit=10&following=1
 ```
 
 #### 响应示例
@@ -656,11 +677,6 @@ GET /api/news/articles/1
 |--------|--------|------|----------|---------|---------|
 | limit  | number | 否   | 返回数量 | 5       | 20      |
 
-#### 请求示例
-```http
-GET /api/news/articles/featured?limit=5
-```
-
 #### 响应示例
 ```json
 {
@@ -679,6 +695,14 @@ GET /api/news/articles/featured?limit=5
 }
 ```
 
+#### 热门文章获取规则
+1. 文章必须是已发布状态（`is_published = 1`）
+2. 按以下优先级排序：
+   - 首先是被设置为热门的文章（`is_featured = 1`）
+   - 其次是浏览量超过100的文章
+3. 在同等条件下，按发布时间倒序排序
+4. 每个分类最多返回5篇文章
+
 ### 4.5 获取相关新闻
 
 #### 请求信息
@@ -694,11 +718,6 @@ GET /api/news/articles/featured?limit=5
 | 参数名 | 类型   | 必填 | 说明     | 默认值 | 最大值 |
 |--------|--------|------|----------|---------|---------|
 | limit  | number | 否   | 返回数量 | 5       | 20      |
-
-#### 请求示例
-```http
-GET /api/news/articles/1/related?limit=5
-```
 
 #### 响应示例
 ```json
@@ -720,22 +739,13 @@ GET /api/news/articles/1/related?limit=5
 
 #### 相关文章获取规则
 1. 优先返回同分类下的文章：
-   - 优先选择发布时间接近的文章
+   - 优先选择发布时间接近的文章（前后7天内）
    - 其次考虑浏览量较高的文章
 2. 如果同分类文章数量不足，则补充其他分类的热门文章：
    - 补充的文章必须是热门文章（`is_featured = 1`）或浏览量超过100
    - 按浏览量降序排序
 3. 排除当前正在查看的文章
 4. 只返回已发布的文章（`is_published = 1`）
-
-#### 注意事项
-1. 所有接口只返回已发布的文章（`is_published = 1`）
-2. 查看文章详情时会自动增加浏览次数
-3. 热门新闻的条件：
-   - 被设置为热门（`is_featured = 1`）
-   - 或浏览次数超过100
-4. 相关新闻是基于同分类和发布时间推荐
-5. 所有时间字段均使用 ISO 8601 格式的 UTC 时间
 
 ## 错误码说明
 
@@ -756,13 +766,22 @@ GET /api/news/articles/1/related?limit=5
 ## 注意事项
 
 1. 所有时间字段均使用 ISO 8601 格式的 UTC 时间
-2. 文件上传大小限制：
-   - 头像：≤2MB
+2. 文件上传限制：
+   - 头像：≤2MB，尺寸不超过
    - 动态图片：≤5MB/张，最多9张
-   - 新闻封面：≤5MB
-3. 支持的图片格式：jpg、jpeg、png、gif、webp
-4. 分页接口均支持以下参数：
+   - 新闻封面：≤5MB，尺寸不超过
+3. 支持的图片格式：
+   - 头像：jpg、jpeg、png
+   - 动态图片：jpg、jpeg、png、gif
+   - 新闻封面：jpg、jpeg、png、webp
+4. 图片处理说明：
+   - 头像会自动裁剪为正方形
+   - 动态图片会生成等比例缩略图
+   - 新闻封面会按照指定尺寸裁剪
+5. 分页接口说明：
    - page：页码，从1开始
-   - limit：每页条数，默认10
-5. 所有涉及ID的接口均需要进行权限验证
-6. 用户密码必须包含大小写字母和数字，长度6-20位
+   - limit：每页条数，默认10，最大100
+6. 安全限制：
+   - 用户密码必须包含大小写字母和数字，长度6-20位
+   - 验证码有效期5分钟
+   - 同一IP每分钟最多请求10次验证码
