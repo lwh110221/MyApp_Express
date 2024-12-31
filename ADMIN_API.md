@@ -12,7 +12,7 @@
 
 #### Token 说明
 - Token 采用 JWT 格式
-- 有效期：12小时
+- 有效期：24小时
 - 需要在每个请求的 Header 中携带
 - 格式：`Authorization: Bearer eyJhbGciOiJIUzI1NiIs...`
 

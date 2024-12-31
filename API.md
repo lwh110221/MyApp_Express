@@ -98,7 +98,7 @@
 #### 响应示例（成功）
 ```json
 {
-  "code": 200,
+  "code": 201,
   "message": "注册成功"
 }
 ```
@@ -135,7 +135,7 @@
 #### 响应示例（成功）
 ```json
 {
-  "success": true,
+  "code": 200,
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIs...",
     "username": "test_user",
@@ -147,7 +147,7 @@
 #### 响应示例（失败）
 ```json
 {
-  "success": false,
+  "code": 401,
   "message": "邮箱或密码错误"
 }
 ```
@@ -581,11 +581,6 @@ DELETE /api/moments/1
 | category_id | number | 否   | 分类ID     | -       |
 | keyword     | string | 否   | 搜索关键词 | -       |
 
-#### 请求示例
-```http
-GET /api/news/articles?page=1&limit=10&category_id=1&keyword=科技
-```
-
 #### 响应示例
 ```json
 {
@@ -614,6 +609,11 @@ GET /api/news/articles?page=1&limit=10&category_id=1&keyword=科技
 }
 ```
 
+#### 说明
+1. 只返回已发布（`is_published = 1`）且有效（`status = 1`）的文章
+2. 按发布时间倒序排序
+3. 支持按标题和摘要进行关键词搜索
+
 ### 4.3 获取新闻详情
 
 #### 请求信息
@@ -621,14 +621,9 @@ GET /api/news/articles?page=1&limit=10&category_id=1&keyword=科技
 - **方法**: `GET`
 
 #### 路径参数
-| 参数名    | 类型   | 说明    |
-|-----------|--------|---------|
-| articleId | number | 文章ID  |
-
-#### 请求示例
-```http
-GET /api/news/articles/1
-```
+| 参数名    | 类型   | 说明   |
+|-----------|--------|--------|
+| articleId | number | 文章ID |
 
 #### 响应示例
 ```json
@@ -646,13 +641,17 @@ GET /api/news/articles/1
     "source": "来源",
     "view_count": 100,
     "is_featured": 1,
-    "is_published": 1,
     "publish_time": "2024-01-20T10:00:00Z",
     "created_at": "2024-01-20T10:00:00Z",
     "updated_at": "2024-01-20T10:00:00Z"
   }
 }
 ```
+
+#### 说明
+1. 只能获取已发布（`is_published = 1`）且有效（`status = 1`）的文章
+2. 每次访问文章详情，浏览量（`view_count`）会自动加1
+3. 如果文章不存在或未发布，返回404错误
 
 ### 4.4 获取热门新闻
 
@@ -684,11 +683,12 @@ GET /api/news/articles/1
 ```
 
 #### 热门文章获取规则
-1. 文章必须是已发布状态（`is_published = 1`）
-2. 按以下优先级排序：
-   - 首先是被设置为热门的文章（`is_featured = 1`）
-   - 其次是浏览量超过100的文章
-3. 在同等条件下，按发布时间倒序排序
+1. 只返回已发布（`is_published = 1`）且有效（`status = 1`）的文章
+2. 优先返回设置为热门的文章（`is_featured = 1`）
+3. 如果热门文章数量不足，则补充浏览量超过100的文章
+4. 补充文章的排序规则：
+   - 按浏览量降序
+   - 浏览量相同时，按发布时间降序
 
 ### 4.5 获取相关新闻
 
@@ -725,14 +725,14 @@ GET /api/news/articles/1
 ```
 
 #### 相关文章获取规则
-1. 优先返回同分类下的文章：
-   - 优先选择发布时间接近的文章（前后7天内）
-   - 其次考虑浏览量较高的文章
-2. 如果同分类文章数量不足，则补充其他分类的热门文章：
-   - 补充的文章必须是热门文章（`is_featured = 1`）或浏览量超过100
+1. 只返回已发布（`is_published = 1`）且有效（`status = 1`）的文章
+2. 优先返回同分类下的文章：
+   - 按发布时间接近程度排序（使用时间差的绝对值）
+   - 时间差相同时，按浏览量降序
+3. 如果同分类文章数量不足，则补充其他分类的文章：
+   - 必须是热门文章（`is_featured = 1`）或浏览量超过100
    - 按浏览量降序排序
-3. 排除当前正在查看的文章
-4. 只返回已发布的文章（`is_published = 1`）
+4. 排除当前正在查看的文章
 
 ## 错误码说明
 
