@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../../config/database');
-const { successResponse, errorResponse } = require('../../utils/responseUtil');
+const ResponseUtil = require('../../utils/responseUtil');
 
 class AdminAuthController {
     // 管理员登录
@@ -17,11 +17,11 @@ class AdminAuthController {
 
             const admin = admins[0];
             if (!admin || !bcrypt.compareSync(password, admin.password)) {
-                return errorResponse(res, '用户名或密码错误', 401);
+                return ResponseUtil.error(res, '用户名或密码错误', 401);
             }
 
             if (admin.status === 0) {
-                return errorResponse(res, '账号已被禁用', 403);
+                return ResponseUtil.error(res, '账号已被禁用', 403);
             }
 
             // 生成JWT token
@@ -45,7 +45,7 @@ class AdminAuthController {
                 WHERE ar.admin_id = ?
             `, [admin.id]);
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 token,
                 admin: {
                     id: admin.id,
@@ -56,7 +56,7 @@ class AdminAuthController {
             });
         } catch (error) {
             console.error('Login error:', error);
-            return errorResponse(res, '登录失败', 500);
+            return ResponseUtil.error(res, '登录失败', 500);
         }
     }
 
@@ -88,14 +88,14 @@ class AdminAuthController {
                 WHERE ar.admin_id = ?
             `, [adminId]);
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 ...admins[0],
                 roles,
                 permissions
             });
         } catch (error) {
             console.error('Get profile error:', error);
-            return errorResponse(res, '获取管理员信息失败', 500);
+            return ResponseUtil.error(res, '获取管理员信息失败', 500);
         }
     }
 
@@ -112,7 +112,7 @@ class AdminAuthController {
             );
 
             if (!bcrypt.compareSync(oldPassword, admins[0].password)) {
-                return errorResponse(res, '原密码错误', 400);
+                return ResponseUtil.error(res, '原密码错误', 400);
             }
 
             // 加密新密码
@@ -124,10 +124,10 @@ class AdminAuthController {
                 [hashedPassword, adminId]
             );
 
-            return successResponse(res, null, '密码修改成功');
+            return ResponseUtil.success(res, null, '密码修改成功');
         } catch (error) {
             console.error('Change password error:', error);
-            return errorResponse(res, '密码修改失败', 500);
+            return ResponseUtil.error(res, '密码修改失败', 500);
         }
     }
 }
