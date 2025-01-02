@@ -88,10 +88,10 @@
 #### 请求示例
 ```json
 {
-  "username": "test_user",
-  "email": "test@example.com",
-  "password": "Test123456",
-  "captcha": "1234"
+  "username": "用户名",
+  "email": "邮箱",
+  "password": "密码",
+  "captcha": "验证码"
 }
 ```
 
@@ -127,8 +127,8 @@
 #### 请求示例
 ```json
 {
-  "email": "test@example.com",
-  "password": "Test123456"
+  "email": "邮箱",
+  "password": "密码"
 }
 ```
 
@@ -138,8 +138,8 @@
   "code": 200,
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIs...",
-    "username": "test_user",
-    "email": "test@example.com"
+    "username": "用户名",
+    "email": "邮箱"
   }
 }
 ```
@@ -163,18 +163,18 @@
 #### 响应示例
 ```json
 {
-  "id": 1,
-  "username": "test_user",
-  "email": "test@example.com",
-  "points": 100,
-  "status": 1,
-  "created_at": "2024-01-20T10:00:00Z",
-  "bio": "用户简介",
-  "profile_picture": "/uploads/avatars/default-avatar.jpg"
+   "id": ID,
+   "username": "用户名",
+   "email": "邮箱",
+   "points": 积分数,
+   "status": 1,
+   "created_at": "2024-12-29T09:37:24.000Z",
+   "bio": "简介",
+   "profile_picture": "/uploads/avatars/default-avatar.jpg"
 }
 ```
 
-### 1.4 更新用户资料
+### 1.4 更新用户资料（简介）
 
 #### 请求信息
 - **接口**: `/users/profile`
@@ -239,7 +239,18 @@
 | newPassword | string | 是   | 新密码   | 长度6-20，必须包含大小写字母和数字 |
 | captcha     | string | 是   | 验证码   | 长度4，不区分大小写 |
 
+#### 请求示例
+
+```json
+{
+  "oldPassword": "原密码",
+  "newPassword": "新密码",
+  "captcha": "验证码"
+}
+```
+
 #### 响应示例
+
 ```json
 {
   "code": 200,
@@ -257,18 +268,7 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "points": 100,
-    "history": [
-      {
-        "id": 1,
-        "points": 10,
-        "type": "签到",
-        "created_at": "2024-01-20T10:00:00Z"
-      }
-    ]
-  }
+    "points": 300
 }
 ```
 
@@ -288,21 +288,23 @@
 | content | string | 是   | 动态内容，最大长度1000字           |
 | images  | file[] | 否   | 图片文件，最多9张，每张不超过5MB |
 
-#### 请求示例
-```http
-POST /api/moments
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
-
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="content"
-
-今天天气真好，和朋友一起去爬山了！#户外运动# 
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="images"; filename="photo1.jpg"
-Content-Type: image/jpeg
-
-[二进制图片数据]
-------WebKitFormBoundary7MA4YWxkTrZu0gW--
+#### 响应示例（有图片）
+```json
+{
+    "success": true,
+    "message": "动态发布成功",
+    "moment": {
+        "id": 28,
+        "content": "这是一条有图片动态",
+        "created_at": "2025-01-02T14:28:06.000Z",
+        "username": "lwh",
+        "user_id": 3,
+        "profile_picture": "/uploads/avatars/avatar-1735827505008-630083796.jpeg",
+        "images": [
+            "/uploads/moments/moment-1735828086704-831884323.png"
+        ] //无图片这里为空
+    }
+}
 ```
 
 ### 2.2 获取动态列表
@@ -312,182 +314,45 @@ Content-Type: image/jpeg
 - **方法**: `GET`
 - **需要认证**: 是
 
-#### 路径参数
-| 参数名  | 类型   | 必填 | 说明                           |
-|---------|--------|------|--------------------------------|
-| userId  | number | 否   | 用户ID，不传则获取所有用户动态 |
-
+#### 不需要填入userid，直接通过token认证获得对应用户的动态
 #### 查询参数
 | 参数名    | 类型   | 必填 | 说明                           | 默认值 |
 |-----------|--------|------|--------------------------------|---------|
 | page      | number | 否   | 页码                           | 1       |
 | limit     | number | 否   | 每页条数                       | 10      |
-| following | number | 否   | 1=只看关注的人的动态           | 0       |
 
 #### 请求示例
 ```http
-GET /api/moments/user/1?page=1&limit=10&following=1
+GET /moments/user/:userId?page=1&limit=10
 ```
 
 #### 响应示例
 ```json
-{
-  "code": 200,
-  "data": {
-    "items": [
-      {
-        "id": 1,
-        "user_id": 10001,
-        "user": {
-          "id": 10001,
-          "nickname": "张三",
-          "avatar": "/uploads/avatars/user-123456.jpg"
-        },
-        "content": "今天天气真好，和朋友一起去爬山了！#户外运动#",
+[
+    {
+        "id": 28,
+        "content": "这是一条有图片动态",
+        "created_at": "2025-01-02T14:28:06.000Z",
+        "username": "lwh",
+        "user_id": 3,
+        "profile_picture": "/uploads/avatars/avatar-1735827505008-630083796.jpeg",
         "images": [
-          "/uploads/moments/202401/photo1-123456.jpg",
-          "/uploads/moments/202401/photo2-123456.jpg"
-        ],
-        "like_count": 5,
-        "comment_count": 2,
-        "is_liked": true,
-        "created_at": "2024-01-20T10:00:00Z"
-      }
-    ],
-    "pagination": {
-      "total": 100,
-      "page": 1,
-      "limit": 10
+            "/uploads/moments/moment-1735828086704-831884323.png"
+        ]
+    },
+    {
+        "id": 27,
+        "content": "这是一条无图片的动态",
+        "created_at": "2025-01-02T14:22:37.000Z",
+        "username": "lwh",
+        "user_id": 3,
+        "profile_picture": "/uploads/avatars/avatar-1735827505008-630083796.jpeg",
+        "images": []
     }
-  }
-}
+]
 ```
 
-### 2.3 获取动态详情
-
-#### 请求信息
-- **接口**: `/moments/:momentId`
-- **方法**: `GET`
-
-#### 路径参数
-| 参数名   | 类型   | 说明    |
-|----------|--------|---------|
-| momentId | number | 动态ID  |
-
-#### 请求示例
-```http
-GET /api/moments/1
-```
-
-#### 响应示例
-```json
-{
-  "code": 200,
-  "data": {
-    "id": 1,
-    "user_id": 10001,
-    "user": {
-      "id": 10001,
-      "nickname": "张三",
-      "avatar": "/uploads/avatars/user-123456.jpg"
-    },
-    "content": "今天天气真好，和朋友一起去爬山了！#户外运动#",
-    "images": [
-      "/uploads/moments/202401/photo1-123456.jpg",
-      "/uploads/moments/202401/photo2-123456.jpg"
-    ],
-    "like_count": 5,
-    "comment_count": 2,
-    "is_liked": true,
-    "created_at": "2024-01-20T10:00:00Z",
-    "comments": [
-      {
-        "id": 1,
-        "user": {
-          "id": 10002,
-          "nickname": "李四",
-          "avatar": "/uploads/avatars/user-234567.jpg"
-        },
-        "content": "风景真不错！",
-        "created_at": "2024-01-20T10:05:00Z"
-      }
-    ]
-  }
-}
-```
-
-### 2.4 点赞/取消点赞动态
-
-#### 请求信息
-- **接口**: `/moments/:momentId/like`
-- **方法**: `POST`
-
-#### 路径参数
-| 参数名   | 类型   | 说明    |
-|----------|--------|---------|
-| momentId | number | 动态ID  |
-
-#### 请求示例
-```http
-POST /api/moments/1/like
-```
-
-#### 响应示例
-```json
-{
-  "code": 200,
-  "data": {
-    "is_liked": true,
-    "like_count": 6
-  }
-}
-```
-
-### 2.5 评论动态
-
-#### 请求信息
-- **接口**: `/moments/:momentId/comments`
-- **方法**: `POST`
-- **Content-Type**: `application/json`
-
-#### 路径参数
-| 参数名   | 类型   | 说明    |
-|----------|--------|---------|
-| momentId | number | 动态ID  |
-
-#### 请求参数
-| 参数名  | 类型   | 必填 | 说明                     |
-|---------|--------|------|--------------------------|
-| content | string | 是   | 评论内容，最大长度200字  |
-
-#### 请求示例
-```http
-POST /api/moments/1/comments
-Content-Type: application/json
-
-{
-  "content": "风景真不错！"
-}
-```
-
-#### 响应示例
-```json
-{
-  "code": 200,
-  "data": {
-    "id": 1,
-    "user": {
-      "id": 10002,
-      "nickname": "李四",
-      "avatar": "/uploads/avatars/user-234567.jpg"
-    },
-    "content": "风景真不错！",
-    "created_at": "2024-01-20T10:05:00Z"
-  }
-}
-```
-
-### 2.6 删除动态
+### 2.3 删除动态
 
 #### 请求信息
 - **接口**: `/moments/:momentId`
@@ -498,37 +363,12 @@ Content-Type: application/json
 |----------|--------|---------|
 | momentId | number | 动态ID  |
 
-#### 请求示例
-```http
-DELETE /api/moments/1
-```
-
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "message": "删除成功"
+    "message": "动态已删除"
 }
 ```
-
-#### 注意事项
-1. 发布动态时：
-   - 图片格式支持：JPG、PNG、GIF
-   - 图片大小限制：每张不超过10MB
-   - 图片数量限制：最多9张
-   - 内容长度：1-1000字
-2. 评论限制：
-   - 内容长度：1-200字
-   - 需要登录才能评论
-3. 删除动态：
-   - 只能删除自己发布的动态
-   - 删除动态会同时删除相关的评论和点赞记录
-4. 图片上传：
-   - 上传的图片会自动压缩和裁剪
-   - 生成不同尺寸的缩略图
-   - 图片URL格式：/uploads/moments/YYYYMM/filename-{random}.ext
-5. 时间显示：
-   - 所有时间字段均使用 ISO 8601 格式的 UTC 时间
 
 ## 3. 验证码模块
 
@@ -556,14 +396,30 @@ DELETE /api/moments/1
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": [
-    {
-      "id": 1,
-      "name": "最新资讯",
-      "code": "latest"
-    }
-  ]
+    "code": 200,
+    "message": "操作成功",
+    "data": [
+        {
+            "id": 1,
+            "name": "最新资讯",
+            "code": "latest"
+        },
+        {
+            "id": 2,
+            "name": "热点资讯",
+            "code": "hot"
+        },
+        {
+            "id": 3,
+            "name": "政策资讯",
+            "code": "policy"
+        },
+        {
+            "id": 4,
+            "name": "每周周刊",
+            "code": "weekly"
+        }
+    ]
 }
 ```
 
@@ -578,41 +434,42 @@ DELETE /api/moments/1
 |-------------|--------|------|------------|---------|
 | page        | number | 否   | 页码       | 1       |
 | limit       | number | 否   | 每页条数   | 10      |
-| category_id | number | 否   | 分类ID     | -       |
-| keyword     | string | 否   | 搜索关键词 | -       |
+| category_id | number | 否   | 分类ID     | -可选     |
+| keyword     | string | 否   | 搜索关键词 | -可选 支持标题和摘要模糊搜索 |
 
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "items": [
-      {
-        "id": 1,
-        "category_id": 1,
-        "category_name": "最新资讯",
-        "title": "文章标题",
-        "summary": "文章摘要",
-        "cover_image": "/uploads/news/cover-123456.jpg",
-        "author": "作者",
-        "view_count": 100,
-        "is_featured": 1,
-        "publish_time": "2024-01-20T10:00:00Z"
-      }
-    ],
-    "pagination": {
-      "total": 100,
-      "page": 1,
-      "limit": 10
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "category_id": 2,
+                "category_name": "热点资讯",
+                "title": "标题.",
+                "summary": "摘要",
+                "cover_image": "封面",
+                "author": "作者",
+                "view_count": 浏览量,
+                "is_featured": 1,
+                "publish_time": "2024-12-30T13:22:10.000Z"
+            }
+        ],
+        "pagination": {
+            "total": 1,
+            "page": 1,
+            "limit": 10
+        }
     }
-  }
 }
 ```
 
 #### 说明
-1. 只返回已发布（`is_published = 1`）且有效（`status = 1`）的文章
-2. 按发布时间倒序排序
-3. 支持按标题和摘要进行关键词搜索
+1. 只返回有效的分类(status = 1)
+2. 按sort_order升序排序
+3. 返回字段:id、name、code
 
 ### 4.3 获取新闻详情
 
@@ -628,30 +485,38 @@ DELETE /api/moments/1
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "id": 1,
-    "category_id": 1,
-    "category_name": "最新资讯",
-    "title": "文章标题",
-    "summary": "文章摘要",
-    "content": "文章内容",
-    "cover_image": "/uploads/news/cover-123456.jpg",
-    "author": "作者",
-    "source": "来源",
-    "view_count": 100,
-    "is_featured": 1,
-    "publish_time": "2024-01-20T10:00:00Z",
-    "created_at": "2024-01-20T10:00:00Z",
-    "updated_at": "2024-01-20T10:00:00Z"
-  }
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "id": 1,
+        "category_id": 2,
+        "title": "Miss.",
+        "summary": "qynaN2hId4",
+        "content": "内容（支持quill富文本格式）",
+        "cover_image": "",
+        "author": "zqrJZoaKlU",
+        "source": "LJvwGdFSMV",
+        "view_count": 206,
+        "is_featured": 1,
+        "is_published": 1,
+        "publish_time": "2024-12-30T13:22:10.000Z",
+        "status": 1,
+        "created_by": 1,
+        "updated_by": 1,
+        "created_at": "2004-09-20T02:37:33.000Z",
+        "updated_at": "2025-01-02T14:52:24.000Z",
+        "category_name": "热点资讯"
+    }
 }
 ```
 
 #### 说明
-1. 只能获取已发布（`is_published = 1`）且有效（`status = 1`）的文章
-2. 每次访问文章详情，浏览量（`view_count`）会自动加1
-3. 如果文章不存在或未发布，返回404错误
+
+1. 只能获取已发布(is_published = 1)且有效(status = 1)的文章
+2. 每次访问文章详情,会在事务中:
+   - 更新浏览量(view_count + 1)
+   - 获取文章详情(包含分类信息)
+3. 如果文章不存在或未发布,返回404错误
 
 ### 4.4 获取热门新闻
 
@@ -667,28 +532,30 @@ DELETE /api/moments/1
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": [
-    {
-      "id": 1,
-      "title": "热门文章标题",
-      "summary": "文章摘要",
-      "cover_image": "/uploads/news/cover-123456.jpg",
-      "view_count": 1000,
-      "publish_time": "2024-01-20T10:00:00Z",
-      "category_name": "最新资讯"
-    }
-  ]
+    "code": 200,
+    "message": "操作成功",
+    "data": [
+        {
+            "id": 1,
+            "title": "Miss.",
+            "summary": "qynaN2hId4",
+            "cover_image": "",
+            "view_count": 206,
+            "publish_time": "2024-12-30T13:22:10.000Z",
+            "category_name": "热点资讯"
+        }
+    ]
 }
 ```
 
 #### 热门文章获取规则
-1. 只返回已发布（`is_published = 1`）且有效（`status = 1`）的文章
-2. 优先返回设置为热门的文章（`is_featured = 1`）
-3. 如果热门文章数量不足，则补充浏览量超过100的文章
-4. 补充文章的排序规则：
-   - 按浏览量降序
-   - 浏览量相同时，按发布时间降序
+1. 默认返回5条记录(可通过limit参数调整,最大20条)
+2. 只返回已发布(is_published = 1)且有效(status = 1)的文章
+3. 优先返回设置为热门的文章(is_featured = 1),按发布时间降序排序
+4. 如果热门文章数量不足limit值:
+   - 补充浏览量>=100的非热门文章
+   - 补充文章按浏览量降序、发布时间降序排序
+   - 排除已返回的热门文章
 
 ### 4.5 获取相关新闻
 
@@ -709,66 +576,38 @@ DELETE /api/moments/1
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": [
-    {
-      "id": 2,
-      "title": "相关文章标题",
-      "summary": "文章摘要",
-      "cover_image": "/uploads/news/cover-123456.jpg",
-      "view_count": 50,
-      "publish_time": "2024-01-20T10:00:00Z",
-      "category_name": "最新资讯"
-    }
-  ]
+    "code": 200,
+    "message": "操作成功",
+    "data": [] //当前无相关
 }
 ```
 
 #### 相关文章获取规则
-1. 只返回已发布（`is_published = 1`）且有效（`status = 1`）的文章
-2. 优先返回同分类下的文章：
-   - 按发布时间接近程度排序（使用时间差的绝对值）
-   - 时间差相同时，按浏览量降序
-3. 如果同分类文章数量不足，则补充其他分类的文章：
-   - 必须是热门文章（`is_featured = 1`）或浏览量超过100
+1. 默认返回5条记录(可通过limit参数调整,最大20条)
+2. 只返回已发布(is_published = 1)且有效(status = 1)的文章
+3. 优先返回同分类下的文章:
+   - 按发布时间接近程度排序(使用TIMESTAMPDIFF计算时间差)
+   - 时间差相同时,按浏览量降序排序
+4. 如果同分类文章数量不足limit值:
+   - 补充其他分类的文章
+   - 补充条件:is_featured = 1 或 view_count >= 100
    - 按浏览量降序排序
-4. 排除当前正在查看的文章
+5. 排除当前正在查看的文章(id != articleId)
 
-## 错误码说明
-
-| 错误码 | 说明 |
-|--------|------|
-| 1001   | 用户名已存在 |
-| 1002   | 邮箱已注册 |
-| 1003   | 验证码错误 |
-| 1004   | 密码错误 |
-| 1005   | 账号不存在 |
-| 2001   | 文件上传失败 |
-| 2002   | 文件格式不支持 |
-| 2003   | 文件大小超限 |
-| 3001   | 没有操作权限 |
-| 3002   | Token已过期 |
-| 3003   | Token无效 |
 
 ## 注意事项
 
 1. 所有时间字段均使用 ISO 8601 格式的 UTC 时间
+
 2. 文件上传限制：
-   - 头像：≤2MB，尺寸不超过
-   - 动态图片：≤5MB/张，最多9张
-   - 新闻封面：≤5MB，尺寸不超过
-3. 支持的图片格式：
-   - 头像：jpg、jpeg、png
-   - 动态图片：jpg、jpeg、png、gif
-   - 新闻封面：jpg、jpeg、png、webp
-4. 图片处理说明：
-   - 头像会自动裁剪为正方形
-   - 动态图片会生成等比例缩略图
-   - 新闻封面会按照指定尺寸裁剪
-5. 分页接口说明：
+   - 新闻图片：≤5MB
+   - 支持格式：jpg、jpeg、png、gif、webp
+
+3. 图片处理说明：
+   - 新闻内容中的base64图片会自动转存到服务器
+   - 图片存储路径：/uploads/news/
+   - 自动清理不再使用的图片文件
+
+4. 分页接口说明：
    - page：页码，从1开始
-   - limit：每页条数，默认10，最大100
-6. 安全限制：
-   - 用户密码必须包含大小写字母和数字，长度6-20位
-   - 验证码有效期5分钟
-   - 同一IP每分钟最多请求10次验证码
+   - limit：每页条数，默认10

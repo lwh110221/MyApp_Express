@@ -1,5 +1,5 @@
 const pool = require('../config/database');
-const { successResponse, errorResponse } = require('../utils/responseUtil');
+const ResponseUtil = require('../utils/responseUtil');
 
 class NewsController {
     // 获取新闻分类列表
@@ -8,10 +8,10 @@ class NewsController {
             const [categories] = await pool.query(
                 'SELECT id, name, code FROM news_categories WHERE status = 1 ORDER BY sort_order ASC'
             );
-            return successResponse(res, categories);
+            return ResponseUtil.success(res, categories);
         } catch (error) {
             console.error('Get news categories error:', error);
-            return errorResponse(res, '获取新闻分类失败');
+            return ResponseUtil.error(res, '获取新闻分类失败');
         }
     }
 
@@ -53,7 +53,7 @@ class NewsController {
                 [...params, parseInt(limit), offset]
             );
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 items: articles,
                 pagination: {
                     total,
@@ -63,7 +63,7 @@ class NewsController {
             });
         } catch (error) {
             console.error('Get news articles error:', error);
-            return errorResponse(res, '获取新闻列表失败');
+            return ResponseUtil.error(res, '获取新闻列表失败');
         }
     }
 
@@ -94,11 +94,11 @@ class NewsController {
 
                 if (articles.length === 0) {
                     await connection.rollback();
-                    return errorResponse(res, '文章不存在或未发布', 404);
+                    return ResponseUtil.error(res, '文章不存在或未发布', 404);
                 }
 
                 await connection.commit();
-                return successResponse(res, articles[0]);
+                return ResponseUtil.success(res, articles[0]);
             } catch (error) {
                 await connection.rollback();
                 throw error;
@@ -107,7 +107,7 @@ class NewsController {
             }
         } catch (error) {
             console.error('Get news article detail error:', error);
-            return errorResponse(res, '获取新闻详情失败');
+            return ResponseUtil.error(res, '获取新闻详情失败');
         }
     }
 
@@ -144,13 +144,13 @@ class NewsController {
                     [remainingLimit]
                 );
                 
-                return successResponse(res, [...featuredArticles, ...popularArticles]);
+                return ResponseUtil.success(res, [...featuredArticles, ...popularArticles]);
             }
 
-            return successResponse(res, featuredArticles);
+            return ResponseUtil.success(res, featuredArticles);
         } catch (error) {
             console.error('Get featured articles error:', error);
-            return errorResponse(res, '获取热门新闻失败');
+            return ResponseUtil.error(res, '获取热门新闻失败');
         }
     }
 
@@ -167,7 +167,7 @@ class NewsController {
             );
 
             if (currentArticle.length === 0) {
-                return errorResponse(res, '文章不存在或未发布', 404);
+                return ResponseUtil.error(res, '文章不存在或未发布', 404);
             }
 
             // 获取同分类的相关文章，优先返回接近发布时间的文章
@@ -206,13 +206,13 @@ class NewsController {
                     [currentArticle[0].category_id, articleId, remainingLimit]
                 );
                 
-                return successResponse(res, [...articles, ...otherArticles]);
+                return ResponseUtil.success(res, [...articles, ...otherArticles]);
             }
 
-            return successResponse(res, articles);
+            return ResponseUtil.success(res, articles);
         } catch (error) {
             console.error('Get related articles error:', error);
-            return errorResponse(res, '获取相关新闻失败');
+            return ResponseUtil.error(res, '获取相关新闻失败');
         }
     }
 }
