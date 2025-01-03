@@ -1003,8 +1003,8 @@
 ##### 响应示例
 ```json
 {
-  "code": 200,
-  "message": "文章已发布"
+    "code": 200,
+    "message": "文章发布成功"
 }
 ```
 
@@ -1030,8 +1030,8 @@
 ##### 响应示例
 ```json
 {
-  "code": 200,
-  "message": "文章已设为热门"
+    "code": 200,
+    "message": "文章取消推荐成功"
 }
 ```
 
@@ -1052,11 +1052,11 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "message": "图片上传成功",
-  "data": {
-    "url": "/uploads/news/news-1704321234567-123456789.jpg"
-  }
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "url": "/uploads/news/news-1704321234567-123456789.jpg"
+    }
 }
 ```
 
@@ -1100,25 +1100,41 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "items": [
-      {
-        "id": 1,
-        "admin_id": 1,
-        "admin_username": "admin",
-        "operation_type": "创建用户",
-        "operation_desc": "创建了新用户",
-        "ip_address": "127.0.0.1",
-        "created_at": "2024-01-20T10:00:00Z"
-      }
-    ],
-    "pagination": {
-      "total": 100,
-      "page": 1,
-      "limit": 10
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "items": [
+            {
+                "id": 26,
+                "admin_id": 1,
+                "operation_type": "GET /",
+                "operation_desc": "lwhadmin 执行了 GET / 操作",
+                "ip_address": "::ffff:127.0.0.1",
+                "request_data": "{}",
+                "response_data": "{\"code\":200,\"success\":true,\"message\":\"操作成功\",\"data\":{\"items\":[{\"id\":25,\"admin_id\":1,\"operation_type\":\"POST /clean\",\"operation_desc\":\"lwhadmin 执行了 POST /clean 操作\",\"ip_address\":\"::ffff:127.0.0.1\",\"request_data\":\"{\\\"beforeDate\\\":\\\"2024-12-29\\\"}\",\"response_data\":\"{\\\"code\\\":200,\\\"success\\\":true,\\\"message\\\":\\\"日志清理成功\\\",\\\"data\\\":{\\\"affectedRows\\\":24}}\",\"status_code\":200,\"created_at\":\"2024-12-28T15:12:25.000Z\",\"admin_username\":\"lwhadmin\"}],\"pagination\":{\"total\":1,\"page\":1,\"limit\":10}}}",
+                "status_code": 200,
+                "created_at": "2024-12-28T15:13:13.000Z",
+                "admin_username": "lwhadmin"
+            },
+            {
+                "id": 25,
+                "admin_id": 1,
+                "operation_type": "POST /clean",
+                "operation_desc": "lwhadmin 执行了 POST /clean 操作",
+                "ip_address": "::ffff:127.0.0.1",
+                "request_data": "{\"beforeDate\":\"2024-12-29\"}",
+                "response_data": "{\"code\":200,\"success\":true,\"message\":\"日志清理成功\",\"data\":{\"affectedRows\":24}}",
+                "status_code": 200,
+                "created_at": "2024-12-28T15:12:25.000Z",
+                "admin_username": "lwhadmin"
+            }
+        ],
+        "pagination": {
+            "total": 2,
+            "page": 1,
+            "limit": 10
+        }
     }
-  }
 }
 ```
 
@@ -1133,23 +1149,28 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "total": 1000,
-    "today": 50,
-    "operationStats": [
-      {
-        "operation_type": "创建用户",
-        "count": 100
-      }
-    ],
-    "trend": [
-      {
-        "date": "2024-01-20",
-        "count": 50
-      }
-    ]
-  }
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "total": 2,
+        "today": 0,
+        "operationStats": [
+            {
+                "operation_type": "POST /clean",
+                "count": 1
+            },
+            {
+                "operation_type": "GET /",
+                "count": 1
+            }
+        ],
+        "trend": [
+            {
+                "date": "2024-12-27T16:00:00.000Z",
+                "count": 2
+            }
+        ]
+    }
 }
 ```
 
@@ -1170,11 +1191,11 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "affectedRows": 100
-  },
-  "message": "日志清理成功"
+    "code": 200,
+    "message": "日志清理成功",
+    "data": {
+        "affectedRows": 2
+    }
 }
 ```
 
