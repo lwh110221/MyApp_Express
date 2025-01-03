@@ -1,5 +1,5 @@
 const pool = require('../../config/database');
-const { successResponse, errorResponse } = require('../../utils/responseUtil');
+const ResponseUtil = require('../../utils/responseUtil');
 
 class UserManageController {
     // 获取用户列表
@@ -49,7 +49,7 @@ class UserManageController {
                 [...params, parseInt(limit), offset]
             );
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 items: users,
                 pagination: {
                     total,
@@ -59,7 +59,7 @@ class UserManageController {
             });
         } catch (error) {
             console.error('Get user list error:', error);
-            return errorResponse(res, '获取用户列表失败');
+            return ResponseUtil.error(res, '获取用户列表失败');
         }
     }
 
@@ -78,7 +78,7 @@ class UserManageController {
             );
 
             if (users.length === 0) {
-                return errorResponse(res, '用户不存在', 404);
+                return ResponseUtil.error(res, '用户不存在', 404);
             }
 
             // 获取用户最近的动态
@@ -101,10 +101,10 @@ class UserManageController {
                 }))
             };
 
-            return successResponse(res, userData);
+            return ResponseUtil.success(res, userData);
         } catch (error) {
             console.error('Get user detail error:', error);
-            return errorResponse(res, '获取用户详情失败');
+            return ResponseUtil.error(res, '获取用户详情失败');
         }
     }
 
@@ -121,13 +121,13 @@ class UserManageController {
             );
 
             if (result.affectedRows === 0) {
-                return errorResponse(res, '用户不存在', 404);
+                return ResponseUtil.error(res, '用户不存在', 404);
             }
 
-            return successResponse(res, null, `用户${statusValue === 1 ? '启用' : '禁用'}成功`);
+            return ResponseUtil.success(res, null, `用户${statusValue === 1 ? '启用' : '禁用'}成功`);
         } catch (error) {
             console.error('Toggle user status error:', error);
-            return errorResponse(res, '修改用户状态失败');
+            return ResponseUtil.error(res, '修改用户状态失败');
         }
     }
 
@@ -153,11 +153,11 @@ class UserManageController {
 
                 if (result.affectedRows === 0) {
                     await connection.rollback();
-                    return errorResponse(res, '用户不存在', 404);
+                    return ResponseUtil.error(res, '用户不存在', 404);
                 }
 
                 await connection.commit();
-                return successResponse(res, null, '用户删除成功');
+                return ResponseUtil.success(res, null, '用户删除成功');
             } catch (error) {
                 await connection.rollback();
                 throw error;
@@ -166,7 +166,7 @@ class UserManageController {
             }
         } catch (error) {
             console.error('Delete user error:', error);
-            return errorResponse(res, '删除用户失败');
+            return ResponseUtil.error(res, '删除用户失败');
         }
     }
 
@@ -197,7 +197,7 @@ class UserManageController {
                 ORDER BY date ASC`
             );
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 total_users: totalResult[0].total,
                 today_new_users: todayResult[0].count,
                 monthly_active_users: activeResult[0].count,
@@ -205,7 +205,7 @@ class UserManageController {
             });
         } catch (error) {
             console.error('Get user stats error:', error);
-            return errorResponse(res, '获取用户统计数据失败');
+            return ResponseUtil.error(res, '获取用户统计数据失败');
         }
     }
 }

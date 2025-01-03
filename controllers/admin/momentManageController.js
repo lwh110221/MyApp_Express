@@ -1,5 +1,5 @@
 const pool = require('../../config/database');
-const { successResponse, errorResponse } = require('../../utils/responseUtil');
+const ResponseUtil = require('../../utils/responseUtil');
 
 class MomentManageController {
     // 获取动态列表
@@ -30,7 +30,7 @@ class MomentManageController {
 
             // 如果没有数据，直接返回空列表
             if (total === 0) {
-                return successResponse(res, {
+                return ResponseUtil.success(res, {
                     items: [],
                     pagination: {
                         total: 0,
@@ -54,7 +54,7 @@ class MomentManageController {
                 [...params, parseInt(limit), offset]
             );
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 items: moments.map(moment => ({
                     ...moment,
                     images: moment.images ? moment.images.split(',') : []
@@ -67,7 +67,7 @@ class MomentManageController {
             });
         } catch (error) {
             console.error('Get moment list error:', error);
-            return errorResponse(res, '获取动态列表失败');
+            return ResponseUtil.error(res, '获取动态列表失败');
         }
     }
 
@@ -82,24 +82,18 @@ class MomentManageController {
 
             try {
                 // 删除动态图片
-                await connection.query(
-                    'DELETE FROM moment_images WHERE moment_id = ?',
-                    [momentId]
-                );
-
+                await connection.query('DELETE FROM moment_images WHERE moment_id = ?', [momentId]);
+                
                 // 删除动态
-                const [result] = await connection.query(
-                    'DELETE FROM user_moments WHERE id = ?',
-                    [momentId]
-                );
+                const [result] = await connection.query('DELETE FROM user_moments WHERE id = ?', [momentId]);
 
                 if (result.affectedRows === 0) {
                     await connection.rollback();
-                    return errorResponse(res, '动态不存在', 404);
+                    return ResponseUtil.error(res, '动态不存在', 404);
                 }
 
                 await connection.commit();
-                return successResponse(res, null, '动态删除成功');
+                return ResponseUtil.success(res, null, '动态删除成功');
             } catch (error) {
                 await connection.rollback();
                 throw error;
@@ -108,7 +102,7 @@ class MomentManageController {
             }
         } catch (error) {
             console.error('Delete moment error:', error);
-            return errorResponse(res, '删除动态失败');
+            return ResponseUtil.error(res, '删除动态失败');
         }
     }
 
@@ -116,21 +110,14 @@ class MomentManageController {
     async getMomentStats(req, res) {
         try {
             // 获取总动态数
-            const [totalResult] = await pool.query(
-                'SELECT COUNT(*) as total FROM user_moments'
-            );
-
-            // 获取今日动态数
+            const [totalResult] = await pool.query('SELECT COUNT(*) as total FROM user_moments');
+            
+            // 获取今日新增动态数
             const [todayResult] = await pool.query(
                 'SELECT COUNT(*) as count FROM user_moments WHERE DATE(created_at) = CURDATE()'
             );
-
-            // 获取本月动态数
-            const [monthResult] = await pool.query(
-                'SELECT COUNT(*) as count FROM user_moments WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)'
-            );
-
-            // 获取动态趋势
+            
+            // 获取动态增长趋势
             const [trendResult] = await pool.query(
                 `SELECT DATE(created_at) as date, COUNT(*) as count 
                 FROM user_moments 
@@ -139,15 +126,14 @@ class MomentManageController {
                 ORDER BY date ASC`
             );
 
-            return successResponse(res, {
-                total: totalResult[0].total,
-                today: todayResult[0].count,
-                month: monthResult[0].count,
-                trend: trendResult
+            return ResponseUtil.success(res, {
+                total_moments: totalResult[0].total,
+                today_new_moments: todayResult[0].count,
+                growth_trend: trendResult
             });
         } catch (error) {
             console.error('Get moment stats error:', error);
-            return errorResponse(res, '获取动态统计数据失败');
+            return ResponseUtil.error(res, '获取动态统计数据失败');
         }
     }
 }
