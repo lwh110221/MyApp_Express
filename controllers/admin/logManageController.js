@@ -1,5 +1,5 @@
 const pool = require('../../config/database');
-const { successResponse, errorResponse } = require('../../utils/responseUtil');
+const ResponseUtil = require('../../utils/responseUtil');
 
 class LogManageController {
     // 获取操作日志列表
@@ -12,18 +12,18 @@ class LogManageController {
             const params = [];
 
             if (startDate) {
-                whereClause += ' AND l.created_at >= ?';
+                whereClause += ' AND created_at >= ?';
                 params.push(startDate);
             }
 
             if (endDate) {
-                whereClause += ' AND l.created_at <= ?';
+                whereClause += ' AND created_at <= ?';
                 params.push(endDate);
             }
 
             // 获取总数
             const [countResult] = await pool.query(
-                `SELECT COUNT(*) as total FROM admin_operation_logs l ${whereClause}`,
+                `SELECT COUNT(*) as total FROM admin_operation_logs ${whereClause}`,
                 params
             );
             const total = countResult[0].total;
@@ -39,7 +39,7 @@ class LogManageController {
                 [...params, parseInt(limit), offset]
             );
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 items: logs,
                 pagination: {
                     total,
@@ -49,7 +49,7 @@ class LogManageController {
             });
         } catch (error) {
             console.error('Get log list error:', error);
-            return errorResponse(res, '获取日志列表失败');
+            return ResponseUtil.error(res, '获取日志列表失败');
         }
     }
 
@@ -60,20 +60,22 @@ class LogManageController {
             const [totalResult] = await pool.query(
                 'SELECT COUNT(*) as total FROM admin_operation_logs'
             );
-
-            // 获取今日日志数
+            
+            // 获取今日操作数
             const [todayResult] = await pool.query(
                 'SELECT COUNT(*) as count FROM admin_operation_logs WHERE DATE(created_at) = CURDATE()'
             );
-
+            
             // 获取操作类型统计
             const [operationStats] = await pool.query(
                 `SELECT operation_type, COUNT(*) as count 
                 FROM admin_operation_logs 
-                GROUP BY operation_type`
+                GROUP BY operation_type 
+                ORDER BY count DESC 
+                LIMIT 10`
             );
-
-            // 获取日志趋势（最近30天）
+            
+            // 获取操作趋势
             const [trendResult] = await pool.query(
                 `SELECT DATE(created_at) as date, COUNT(*) as count 
                 FROM admin_operation_logs 
@@ -82,7 +84,7 @@ class LogManageController {
                 ORDER BY date ASC`
             );
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 total: totalResult[0].total,
                 today: todayResult[0].count,
                 operationStats,
@@ -90,7 +92,7 @@ class LogManageController {
             });
         } catch (error) {
             console.error('Get log stats error:', error);
-            return errorResponse(res, '获取日志统计数据失败');
+            return ResponseUtil.error(res, '获取日志统计数据失败');
         }
     }
 
@@ -99,21 +101,17 @@ class LogManageController {
         try {
             const { beforeDate } = req.body;
 
-            if (!beforeDate) {
-                return errorResponse(res, '请指定清理日期', 400);
-            }
-
             const [result] = await pool.query(
                 'DELETE FROM admin_operation_logs WHERE created_at < ?',
                 [beforeDate]
             );
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 affectedRows: result.affectedRows
             }, '日志清理成功');
         } catch (error) {
             console.error('Clean logs error:', error);
-            return errorResponse(res, '清理日志失败');
+            return ResponseUtil.error(res, '清理日志失败');
         }
     }
 }
