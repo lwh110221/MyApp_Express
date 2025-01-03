@@ -6,9 +6,9 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     // 根据上传类型选择不同的目录
     let uploadType = 'moments';
-    if (req.path.includes('avatar')) {
+    if (req.originalUrl.includes('/avatar')) {
       uploadType = 'avatars';
-    } else if (req.path.includes('news')) {
+    } else if (req.originalUrl.includes('/news')) {
       uploadType = 'news';
     }
     cb(null, `public/uploads/${uploadType}`);
@@ -16,9 +16,9 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     let fileType = 'moment';
-    if (req.path.includes('avatar')) {
+    if (req.originalUrl.includes('/avatar')) {
       fileType = 'avatar';
-    } else if (req.path.includes('news')) {
+    } else if (req.originalUrl.includes('/news')) {
       fileType = 'news';
     }
     cb(null, `${fileType}-${uniqueSuffix}${path.extname(file.originalname)}`);
