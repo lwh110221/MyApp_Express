@@ -169,7 +169,7 @@ CREATE TABLE `news_categories` (
     `name` VARCHAR(50) NOT NULL COMMENT '分类名称',
     `code` VARCHAR(50) NOT NULL COMMENT '分类编码',
     `sort_order` INT DEFAULT 0 COMMENT '排序顺序',
-    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY `uk_code` (`code`),

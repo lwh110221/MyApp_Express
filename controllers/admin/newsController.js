@@ -1,43 +1,9 @@
 const pool = require('../../config/database');
-const { successResponse, errorResponse } = require('../../utils/responseUtil');
+const ResponseUtil = require('../../utils/responseUtil');
 const sanitizeHtml = require('sanitize-html');
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
-
-// 配置图片上传
-const storage = multer.diskStorage({
-    destination: async function (req, file, cb) {
-        const uploadDir = 'public/uploads/news';
-        try {
-            await fs.mkdir(uploadDir, { recursive: true });
-            cb(null, uploadDir);
-        } catch (error) {
-            cb(error);
-        }
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 限制5MB
-    },
-    fileFilter: function (req, file, cb) {
-        const allowedTypes = /jpeg|jpg|png|gif|webp/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-        if (extname && mimetype) {
-            cb(null, true);
-        } else {
-            cb(new Error('只支持图片文件!'));
-        }
-    }
-});
+const upload = require('../../config/multer');
 
 // 配置允许的HTML标签和属性，完全支持Quill编辑器
 const sanitizeOptions = {
@@ -105,10 +71,10 @@ class NewsController {
             const [categories] = await pool.query(
                 'SELECT * FROM news_categories ORDER BY sort_order ASC'
             );
-            return successResponse(res, categories);
+            return ResponseUtil.success(res, categories);
         } catch (error) {
             console.error('Get news categories error:', error);
-            return errorResponse(res, '获取新闻分类失败');
+            return ResponseUtil.error(res, '获取新闻分类失败');
         }
     }
 
@@ -120,10 +86,10 @@ class NewsController {
                 'INSERT INTO news_categories (name, code, sort_order) VALUES (?, ?, ?)',
                 [name, code, sort_order]
             );
-            return successResponse(res, { id: result.insertId }, '新闻分类创建成功');
+            return ResponseUtil.success(res, { id: result.insertId }, '新闻分类创建成功');
         } catch (error) {
             console.error('Create news category error:', error);
-            return errorResponse(res, '创建新闻分类失败');
+            return ResponseUtil.error(res, '创建新闻分类失败');
         }
     }
 
@@ -131,15 +97,18 @@ class NewsController {
     async updateCategory(req, res) {
         try {
             const { categoryId } = req.params;
-            const { name, sort_order, status } = req.body;
-            await pool.query(
-                'UPDATE news_categories SET name = ?, sort_order = ?, status = ? WHERE id = ?',
-                [name, sort_order, status, categoryId]
+            const { name, code, sort_order, status } = req.body;
+            const [result] = await pool.query(
+                'UPDATE news_categories SET name = ?, code = ?, sort_order = ?, status = ? WHERE id = ?',
+                [name, code, sort_order, status, categoryId]
             );
-            return successResponse(res, null, '新闻分类更新成功');
+            if (result.affectedRows === 0) {
+                return ResponseUtil.error(res, '新闻分类不存在', 404);
+            }
+            return ResponseUtil.success(res, null, '新闻分类更新成功');
         } catch (error) {
             console.error('Update news category error:', error);
-            return errorResponse(res, '更新新闻分类失败');
+            return ResponseUtil.error(res, '更新新闻分类失败');
         }
     }
 
@@ -147,26 +116,40 @@ class NewsController {
     async deleteCategory(req, res) {
         try {
             const { categoryId } = req.params;
-            // 检查分类下是否有文章
+            // 检查是否有关联的文章
             const [articles] = await pool.query(
                 'SELECT COUNT(*) as count FROM news_articles WHERE category_id = ?',
                 [categoryId]
             );
             if (articles[0].count > 0) {
-                return errorResponse(res, '该分类下存在文章，无法删除');
+                return ResponseUtil.error(res, '该分类下还有文章，无法删除');
             }
-            await pool.query('DELETE FROM news_categories WHERE id = ?', [categoryId]);
-            return successResponse(res, null, '新闻分类删除成功');
+            const [result] = await pool.query(
+                'DELETE FROM news_categories WHERE id = ?',
+                [categoryId]
+            );
+            if (result.affectedRows === 0) {
+                return ResponseUtil.error(res, '新闻分类不存在', 404);
+            }
+            return ResponseUtil.success(res, null, '新闻分类删除成功');
         } catch (error) {
             console.error('Delete news category error:', error);
-            return errorResponse(res, '删除新闻分类失败');
+            return ResponseUtil.error(res, '删除新闻分类失败');
         }
     }
 
     // 获取新闻文章列表
     async getArticleList(req, res) {
         try {
-            const { page = 1, limit = 10, category_id, is_published, keyword } = req.query;
+            const { 
+                page = 1, 
+                limit = 10, 
+                category_id, 
+                keyword, 
+                status,
+                is_published,
+                is_featured 
+            } = req.query;
             const offset = (page - 1) * limit;
 
             let whereClause = 'WHERE 1=1';
@@ -176,13 +159,21 @@ class NewsController {
                 whereClause += ' AND a.category_id = ?';
                 params.push(category_id);
             }
-            if (is_published !== undefined) {
-                whereClause += ' AND a.is_published = ?';
-                params.push(is_published);
-            }
             if (keyword) {
                 whereClause += ' AND (a.title LIKE ? OR a.summary LIKE ?)';
                 params.push(`%${keyword}%`, `%${keyword}%`);
+            }
+            if (status !== undefined) {
+                whereClause += ' AND a.status = ?';
+                params.push(status);
+            }
+            if (is_published !== undefined) {
+                whereClause += ' AND a.is_published = ?';
+                params.push(parseInt(is_published));
+            }
+            if (is_featured !== undefined) {
+                whereClause += ' AND a.is_featured = ?';
+                params.push(parseInt(is_featured));
             }
 
             // 获取总数
@@ -194,18 +185,33 @@ class NewsController {
 
             // 获取文章列表
             const [articles] = await pool.query(
-                `SELECT a.*, c.name as category_name, 
-                admin.username as creator_name
+                `SELECT 
+                    a.id, 
+                    a.category_id, 
+                    a.title, 
+                    a.summary,
+                    a.cover_image,
+                    a.author,
+                    a.source,
+                    a.view_count,
+                    a.is_featured,
+                    a.is_published,
+                    a.status,
+                    a.publish_time,
+                    a.created_by,
+                    a.updated_by,
+                    a.created_at,
+                    a.updated_at,
+                    c.name as category_name
                 FROM news_articles a
                 LEFT JOIN news_categories c ON a.category_id = c.id
-                LEFT JOIN admins admin ON a.created_by = admin.id
                 ${whereClause}
                 ORDER BY a.created_at DESC
                 LIMIT ? OFFSET ?`,
                 [...params, parseInt(limit), offset]
             );
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 items: articles,
                 pagination: {
                     total,
@@ -215,7 +221,7 @@ class NewsController {
             });
         } catch (error) {
             console.error('Get news articles error:', error);
-            return errorResponse(res, '获取新闻文章列表失败');
+            return ResponseUtil.error(res, '获取新闻列表失败');
         }
     }
 
@@ -224,23 +230,21 @@ class NewsController {
         try {
             const { articleId } = req.params;
             const [articles] = await pool.query(
-                `SELECT a.*, c.name as category_name,
-                admin.username as creator_name
+                `SELECT a.*, c.name as category_name
                 FROM news_articles a
                 LEFT JOIN news_categories c ON a.category_id = c.id
-                LEFT JOIN admins admin ON a.created_by = admin.id
                 WHERE a.id = ?`,
                 [articleId]
             );
 
             if (articles.length === 0) {
-                return errorResponse(res, '新闻文章不存在', 404);
+                return ResponseUtil.error(res, '文章不存在', 404);
             }
 
-            return successResponse(res, articles[0]);
+            return ResponseUtil.success(res, articles[0]);
         } catch (error) {
             console.error('Get news article detail error:', error);
-            return errorResponse(res, '获取新闻文章详情失败');
+            return ResponseUtil.error(res, '获取新闻详情失败');
         }
     }
 
@@ -248,14 +252,13 @@ class NewsController {
     async uploadImage(req, res) {
         try {
             if (!req.file) {
-                return errorResponse(res, '请选择要上传的图片');
+                return ResponseUtil.error(res, '请选择要上传的图片');
             }
-
             const imageUrl = `/uploads/news/${req.file.filename}`;
-            return successResponse(res, { url: imageUrl }, '图片上传成功');
+            return ResponseUtil.success(res, { url: imageUrl });
         } catch (error) {
             console.error('Upload image error:', error);
-            return errorResponse(res, '图片上传失败');
+            return ResponseUtil.error(res, '图片上传失败');
         }
     }
 
@@ -265,50 +268,49 @@ class NewsController {
             const {
                 category_id,
                 title,
-                summary,
                 content,
+                summary,
                 cover_image,
                 author,
                 source,
                 is_featured = 0,
-                is_published = 0
+                is_published = 0,
+                publish_time = null
             } = req.body;
 
-            // 处理Quill内容
+            // 处理 Quill 内容
             let processedContent = content;
             if (typeof content === 'object' && content.ops) {
-                // 如果收到Delta格式，转换为HTML
+                // 如果是 Delta 格式，转换为 HTML
                 processedContent = this.deltaToHtml(content);
             }
 
-            // 处理内容中的临时图片URL
+            // 处理内容中的图片
             processedContent = await this.processContentImages(processedContent);
 
             // 清理和验证富文本内容
             const sanitizedContent = sanitizeHtml(processedContent, sanitizeOptions);
-            
-            // 提取文章摘要（如果未提供）
-            const autoSummary = summary || this.generateSummary(sanitizedContent);
 
-            const admin_id = req.admin.id;
+            // 如果没有提供摘要，自动生成
+            const finalSummary = summary || this.generateSummary(sanitizedContent);
 
             const [result] = await pool.query(
                 `INSERT INTO news_articles (
-                    category_id, title, summary, content, cover_image,
+                    category_id, title, content, summary, cover_image,
                     author, source, is_featured, is_published,
-                    created_by, updated_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    publish_time, created_at, updated_at, created_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`,
                 [
-                    category_id, title, autoSummary, sanitizedContent, cover_image,
+                    category_id, title, sanitizedContent, finalSummary, cover_image,
                     author, source, is_featured, is_published,
-                    admin_id, admin_id
+                    publish_time || new Date(), req.admin.id
                 ]
             );
 
-            return successResponse(res, { id: result.insertId }, '新闻文章创建成功');
+            return ResponseUtil.success(res, { id: result.insertId }, '新闻文章创建成功');
         } catch (error) {
             console.error('Create news article error:', error);
-            return errorResponse(res, '创建新闻文章失败');
+            return ResponseUtil.error(res, '创建新闻文章失败');
         }
     }
 
@@ -319,74 +321,187 @@ class NewsController {
             const {
                 category_id,
                 title,
-                summary,
                 content,
+                summary,
                 cover_image,
                 author,
                 source,
                 is_featured,
-                is_published
+                is_published,
+                publish_time,
+                status
             } = req.body;
 
-            // 处理Quill内容
-            let processedContent = content;
-            if (typeof content === 'object' && content.ops) {
-                processedContent = this.deltaToHtml(content);
-            }
-
-            // 处理内容中的临时图片URL
-            processedContent = await this.processContentImages(processedContent);
-
-            // 清理和验证富文本内容
-            const sanitizedContent = sanitizeHtml(processedContent, sanitizeOptions);
-            
-            // 提取文章摘要（如果未提供）
-            const autoSummary = summary || this.generateSummary(sanitizedContent);
-
-            const admin_id = req.admin.id;
-
-            // 获取原文章内容以处理不再使用的图片
+            // 获取原文章内容
             const [oldArticle] = await pool.query(
                 'SELECT content FROM news_articles WHERE id = ?',
                 [articleId]
             );
 
-            if (oldArticle[0]) {
-                await this.cleanupUnusedImages(oldArticle[0].content, sanitizedContent);
+            if (oldArticle.length === 0) {
+                return ResponseUtil.error(res, '文章不存在', 404);
             }
 
-            await pool.query(
-                `UPDATE news_articles SET
-                category_id = ?, title = ?, summary = ?, content = ?,
-                cover_image = ?, author = ?, source = ?,
-                is_featured = ?, is_published = ?,
-                updated_by = ?, publish_time = ?
-                WHERE id = ?`,
-                [
-                    category_id, title, autoSummary, sanitizedContent,
-                    cover_image, author, source,
-                    is_featured, is_published,
-                    admin_id, is_published ? new Date() : null,
-                    articleId
-                ]
+            // 处理 Quill 内容
+            let processedContent = content;
+            if (content) {
+                if (typeof content === 'object' && content.ops) {
+                    // 如果是 Delta 格式，转换为 HTML
+                    processedContent = this.deltaToHtml(content);
+                }
+                // 处理内容中的图片
+                processedContent = await this.processContentImages(processedContent);
+                // 清理和验证富文本内容
+                processedContent = sanitizeHtml(processedContent, sanitizeOptions);
+                // 清理不再使用的图片
+                await this.cleanupUnusedImages(oldArticle[0].content, processedContent);
+            }
+
+            // 如果没有提供摘要，且内容已更新，则重新生成摘要
+            const finalSummary = summary || (content ? this.generateSummary(processedContent) : undefined);
+
+            // 构建更新字段
+            const updates = [];
+            const params = [];
+            
+            if (category_id !== undefined) {
+                updates.push('category_id = ?');
+                params.push(category_id);
+            }
+            if (title !== undefined) {
+                updates.push('title = ?');
+                params.push(title);
+            }
+            if (content !== undefined) {
+                updates.push('content = ?');
+                params.push(processedContent);
+            }
+            if (finalSummary !== undefined) {
+                updates.push('summary = ?');
+                params.push(finalSummary);
+            }
+            if (cover_image !== undefined) {
+                updates.push('cover_image = ?');
+                params.push(cover_image);
+            }
+            if (author !== undefined) {
+                updates.push('author = ?');
+                params.push(author);
+            }
+            if (source !== undefined) {
+                updates.push('source = ?');
+                params.push(source);
+            }
+            if (is_featured !== undefined) {
+                updates.push('is_featured = ?');
+                params.push(is_featured);
+            }
+            if (is_published !== undefined) {
+                updates.push('is_published = ?');
+                params.push(is_published);
+                if (is_published === 1) {
+                    updates.push('publish_time = NOW()');
+                }
+            }
+            if (status !== undefined) {
+                updates.push('status = ?');
+                params.push(status);
+            }
+            if (publish_time !== undefined) {
+                updates.push('publish_time = ?');
+                params.push(publish_time);
+            }
+
+            // 添加更新时间和更新人
+            updates.push('updated_at = NOW()');
+            updates.push('updated_by = ?');
+            params.push(req.admin.id);
+
+            // 添加文章ID
+            params.push(articleId);
+
+            const [result] = await pool.query(
+                `UPDATE news_articles SET ${updates.join(', ')} WHERE id = ?`,
+                params
             );
 
-            return successResponse(res, null, '新闻文章更新成功');
+            if (result.affectedRows === 0) {
+                return ResponseUtil.error(res, '文章不存在', 404);
+            }
+
+            return ResponseUtil.success(res, null, '新闻文章更新成功');
         } catch (error) {
             console.error('Update news article error:', error);
-            return errorResponse(res, '更新新闻文章失败');
+            return ResponseUtil.error(res, '更新新闻文章失败');
         }
     }
 
     // 删除新闻文章
     async deleteArticle(req, res) {
+        const connection = await pool.getConnection();
         try {
             const { articleId } = req.params;
-            await pool.query('DELETE FROM news_articles WHERE id = ?', [articleId]);
-            return successResponse(res, null, '新闻文章删除成功');
+
+            await connection.beginTransaction();
+
+            // 获取文章内容以删除相关图片
+            const [article] = await connection.query(
+                'SELECT content, cover_image FROM news_articles WHERE id = ?',
+                [articleId]
+            );
+
+            if (article.length === 0) {
+                await connection.rollback();
+                return ResponseUtil.error(res, '文章不存在', 404);
+            }
+
+            // 删除文章
+            const [result] = await connection.query(
+                'DELETE FROM news_articles WHERE id = ?',
+                [articleId]
+            );
+
+            if (result.affectedRows === 0) {
+                await connection.rollback();
+                return ResponseUtil.error(res, '文章不存在', 404);
+            }
+
+            // 删除文章内容中的图片
+            const content = article[0].content;
+            if (content) {
+                const imageRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
+                let match;
+                while ((match = imageRegex.exec(content)) !== null) {
+                    const imageUrl = match[1];
+                    if (imageUrl.startsWith('/uploads/news/')) {
+                        try {
+                            const filePath = path.join('public', imageUrl);
+                            await fs.unlink(filePath);
+                        } catch (error) {
+                            console.error('Delete content image error:', error);
+                        }
+                    }
+                }
+            }
+
+            // 删除封面图片
+            if (article[0].cover_image && article[0].cover_image.startsWith('/uploads/news/')) {
+                try {
+                    const coverPath = path.join('public', article[0].cover_image);
+                    await fs.unlink(coverPath);
+                } catch (error) {
+                    console.error('Delete cover image error:', error);
+                }
+            }
+
+            await connection.commit();
+            return ResponseUtil.success(res, null, '文章删除成功');
         } catch (error) {
-            console.error('Delete news article error:', error);
-            return errorResponse(res, '删除新闻文章失败');
+            await connection.rollback();
+            console.error('Delete article error:', error);
+            return ResponseUtil.error(res, '删除文章失败');
+        } finally {
+            connection.release();
         }
     }
 
@@ -395,123 +510,101 @@ class NewsController {
         try {
             const { articleId } = req.params;
             const { is_published } = req.body;
-            const admin_id = req.admin.id;
 
-            await pool.query(
-                `UPDATE news_articles SET
+            const [result] = await pool.query(
+                `UPDATE news_articles SET 
                 is_published = ?,
                 publish_time = ?,
-                updated_by = ?
+                updated_at = NOW()
                 WHERE id = ?`,
-                [is_published, is_published ? new Date() : null, admin_id, articleId]
+                [
+                    is_published,
+                    is_published ? new Date() : null,
+                    articleId
+                ]
             );
 
-            return successResponse(res, null, is_published ? '文章已发布' : '文章已下线');
+            if (result.affectedRows === 0) {
+                return ResponseUtil.error(res, '文章不存在', 404);
+            }
+
+            return ResponseUtil.success(res, null, `文章${is_published ? '发布' : '下线'}成功`);
         } catch (error) {
             console.error('Update article publish status error:', error);
-            return errorResponse(res, '更新文章发布状态失败');
+            return ResponseUtil.error(res, '更新文章发布状态失败');
         }
     }
 
-    // 更新文章热门状态
+    // 更新文章推荐状态
     async updateArticleFeaturedStatus(req, res) {
         try {
             const { articleId } = req.params;
             const { is_featured } = req.body;
-            const admin_id = req.admin.id;
 
-            await pool.query(
-                `UPDATE news_articles SET
-                is_featured = ?,
-                updated_by = ?
-                WHERE id = ?`,
-                [is_featured, admin_id, articleId]
+            const [result] = await pool.query(
+                'UPDATE news_articles SET is_featured = ?, updated_at = NOW() WHERE id = ?',
+                [is_featured, articleId]
             );
 
-            return successResponse(res, null, is_featured ? '文章已设为热门' : '文章已取消热门');
+            if (result.affectedRows === 0) {
+                return ResponseUtil.error(res, '文章不存在', 404);
+            }
+
+            return ResponseUtil.success(res, null, `文章${is_featured ? '设为' : '取消'}推荐成功`);
         } catch (error) {
             console.error('Update article featured status error:', error);
-            return errorResponse(res, '更新文章热门状态失败');
+            return ResponseUtil.error(res, '更新文章推荐状态失败');
         }
     }
 
     // 生成文章摘要
     generateSummary(content, maxLength = 200) {
         // 移除HTML标签
-        const plainText = content.replace(/<[^>]+>/g, '');
-        // 移除多余空白字符
-        const trimmedText = plainText.replace(/\s+/g, ' ').trim();
+        const text = content.replace(/<[^>]+>/g, '');
+        // 移除多余空格
+        const cleanText = text.replace(/\s+/g, ' ').trim();
         // 截取指定长度
-        return trimmedText.length > maxLength 
-            ? trimmedText.substring(0, maxLength) + '...'
-            : trimmedText;
+        return cleanText.length > maxLength
+            ? cleanText.substring(0, maxLength) + '...'
+            : cleanText;
     }
 
-    // 处理Quill Delta格式
-    deltaToHtml(delta) {
-        if (!delta || !delta.ops) {
-            return '';
-        }
-
-        let html = '';
-        delta.ops.forEach(op => {
-            if (typeof op.insert === 'string') {
-                let text = op.insert;
-                if (op.attributes) {
-                    if (op.attributes.bold) text = `<strong>${text}</strong>`;
-                    if (op.attributes.italic) text = `<em>${text}</em>`;
-                    if (op.attributes.underline) text = `<u>${text}</u>`;
-                    if (op.attributes.strike) text = `<s>${text}</s>`;
-                    if (op.attributes.link) text = `<a href="${op.attributes.link}">${text}</a>`;
-                    if (op.attributes.header) text = `<h${op.attributes.header}>${text}</h${op.attributes.header}>`;
-                    if (op.attributes.list === 'ordered') text = `<li>${text}</li>`;
-                    if (op.attributes.list === 'bullet') text = `<li>${text}</li>`;
-                    if (op.attributes.blockquote) text = `<blockquote>${text}</blockquote>`;
-                    if (op.attributes.code) text = `<pre><code>${text}</code></pre>`;
-                }
-                html += text;
-            } else if (op.insert && typeof op.insert === 'object') {
-                // 处理图片等嵌入内容
-                if (op.insert.image) {
-                    html += `<img src="${op.insert.image}" alt="图片">`;
-                }
-            }
-        });
-
-        return html;
-    }
-
-    // 处理内容中的图片
+    // 处理文章内容中的图片
     async processContentImages(content) {
-        const tempImagePattern = /<img[^>]+src="(data:image\/[^"]+)"[^>]*>/g;
+        const imageRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
         let match;
         let processedContent = content;
 
-        while ((match = tempImagePattern.exec(content)) !== null) {
-            const base64Data = match[1].split(',')[1];
-            const imageBuffer = Buffer.from(base64Data, 'base64');
-            
-            const filename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.png';
-            const imagePath = path.join('public/uploads/news', filename);
-            
-            await fs.writeFile(imagePath, imageBuffer);
-            
-            const imageUrl = `/uploads/news/${filename}`;
-            processedContent = processedContent.replace(match[1], imageUrl);
+        while ((match = imageRegex.exec(content)) !== null) {
+            const imageUrl = match[1];
+            // 如果是base64图片，需要保存为文件
+            if (imageUrl.startsWith('data:image')) {
+                try {
+                    const base64Data = imageUrl.split(',')[1];
+                    const imageBuffer = Buffer.from(base64Data, 'base64');
+                    const filename = `news-${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
+                    const uploadDir = 'public/uploads/news';
+                    await fs.mkdir(uploadDir, { recursive: true });
+                    await fs.writeFile(`${uploadDir}/${filename}`, imageBuffer);
+                    const newImageUrl = `/uploads/news/${filename}`;
+                    processedContent = processedContent.replace(imageUrl, newImageUrl);
+                } catch (error) {
+                    console.error('Process image error:', error);
+                }
+            }
         }
-
         return processedContent;
     }
 
     // 清理不再使用的图片
     async cleanupUnusedImages(oldContent, newContent) {
         const extractImageUrls = (content) => {
-            const urls = new Set();
-            const pattern = /<img[^>]+src="([^"]+)"[^>]*>/g;
+            const urls = [];
+            const regex = /<img[^>]+src="([^"]+)"[^>]*>/g;
             let match;
-            while ((match = pattern.exec(content)) !== null) {
+            while ((match = regex.exec(content)) !== null) {
                 if (match[1].startsWith('/uploads/news/')) {
-                    urls.add(match[1]);
+                    urls.push(match[1]);
                 }
             }
             return urls;
@@ -521,21 +614,123 @@ class NewsController {
         const newUrls = extractImageUrls(newContent);
 
         // 找出不再使用的图片URL
-        const unusedUrls = [...oldUrls].filter(url => !newUrls.has(url));
+        const unusedUrls = oldUrls.filter(url => !newUrls.includes(url));
 
         // 删除不再使用的图片文件
         for (const url of unusedUrls) {
-            const imagePath = path.join('public', url);
             try {
-                await fs.unlink(imagePath);
+                const filePath = path.join('public', url);
+                await fs.unlink(filePath);
             } catch (error) {
                 console.error('Delete unused image error:', error);
             }
         }
     }
+
+    // 将 Quill Delta 格式转换为 HTML
+    deltaToHtml(delta) {
+        if (!delta || !delta.ops) {
+            return '';
+        }
+
+        let html = '';
+        let inList = false;
+        let listType = null;
+        let listItems = [];
+
+        delta.ops.forEach((op, index) => {
+            if (typeof op.insert === 'string') {
+                let text = op.insert.replace(/\n/g, ''); // 移除换行符
+                if (!text && op.insert === '\n') {
+                    if (inList && (index === delta.ops.length - 1 || delta.ops[index + 1]?.attributes?.list !== listType)) {
+                        // 结束当前列表
+                        html += `<${listType === 'ordered' ? 'ol' : 'ul'}>${listItems.join('')}</${listType === 'ordered' ? 'ol' : 'ul'}>`;
+                        inList = false;
+                        listItems = [];
+                        listType = null;
+                    } else if (!inList) {
+                        html += '<br>';
+                    }
+                    return;
+                }
+
+                if (op.attributes) {
+                    // 处理文本样式
+                    if (op.attributes.bold) text = `<strong>${text}</strong>`;
+                    if (op.attributes.italic) text = `<em>${text}</em>`;
+                    if (op.attributes.underline) text = `<u>${text}</u>`;
+                    if (op.attributes.strike) text = `<s>${text}</s>`;
+                    if (op.attributes.script === 'super') text = `<sup>${text}</sup>`;
+                    if (op.attributes.script === 'sub') text = `<sub>${text}</sub>`;
+                    if (op.attributes.link) text = `<a href="${op.attributes.link}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+                    
+                    // 处理块级样式
+                    if (op.attributes.header) {
+                        text = `<h${op.attributes.header}>${text}</h${op.attributes.header}>`;
+                    } else if (op.attributes.list) {
+                        if (!inList || listType !== op.attributes.list) {
+                            if (inList) {
+                                // 结束前一个列表
+                                html += `<${listType === 'ordered' ? 'ol' : 'ul'}>${listItems.join('')}</${listType === 'ordered' ? 'ol' : 'ul'}>`;
+                                listItems = [];
+                            }
+                            inList = true;
+                            listType = op.attributes.list;
+                        }
+                        listItems.push(`<li>${text}</li>`);
+                        return;
+                    } else if (op.attributes.blockquote) {
+                        text = `<blockquote>${text}</blockquote>`;
+                    } else if (op.attributes.code) {
+                        text = `<pre><code>${text}</code></pre>`;
+                    } else if (!inList) {
+                        text = `<p>${text}</p>`;
+                    }
+                } else if (!inList) {
+                    text = `<p>${text}</p>`;
+                }
+
+                if (!inList) {
+                    html += text;
+                }
+            } else if (op.insert && typeof op.insert === 'object') {
+                // 处理图片等嵌入内容
+                if (op.insert.image) {
+                    const imageHtml = `<img src="${op.insert.image}" alt="图片"${
+                        op.attributes ? this.getImageAttributes(op.attributes) : ''
+                    }>`;
+                    html += imageHtml;
+                }
+            }
+        });
+
+        // 处理最后一个列表（如果有）
+        if (inList) {
+            html += `<${listType === 'ordered' ? 'ol' : 'ul'}>${listItems.join('')}</${listType === 'ordered' ? 'ol' : 'ul'}>`;
+        }
+
+        return html;
+    }
+
+    // 获取图片属性
+    getImageAttributes(attributes) {
+        const attrs = [];
+        if (attributes.width) attrs.push(`width="${attributes.width}"`);
+        if (attributes.height) attrs.push(`height="${attributes.height}"`);
+        if (attributes.style) {
+            const styles = [];
+            for (const [key, value] of Object.entries(attributes.style)) {
+                styles.push(`${key}: ${value}`);
+            }
+            if (styles.length > 0) {
+                attrs.push(`style="${styles.join('; ')}"`);
+            }
+        }
+        return attrs.length > 0 ? ' ' + attrs.join(' ') : '';
+    }
 }
 
 module.exports = {
     newsController: new NewsController(),
-    upload: upload
+    upload
 }; 

@@ -67,33 +67,6 @@
 | 404    | 资源不存在 | "用户不存在" |
 | 500    | 服务器内部错误 | "服务器内部错误，请稍后重试" |
 
-### 响应格式
-
-#### 成功响应
-```json
-{
-  "code": 200,
-  "data": {
-    // 响应数据
-  },
-  "message": "操作成功"
-}
-```
-
-#### 错误响应
-```json
-{
-  "code": 400,
-  "message": "错误信息",
-  "errors": [
-    {
-      "field": "username",
-      "message": "用户名长度必须在3-20之间"
-    }
-  ]
-}
-```
-
 ## 权限说明
 
 ### 角色类型
@@ -142,25 +115,22 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIs...",
-    "admin": {
-      "id": 1,
-      "username": "admin",
-      "email": "admin@example.com",
-      "status": 1,
-      "last_login": "2024-01-20T10:00:00Z",
-      "roles": [
-        {
-          "id": 1,
-          "name": "超级管理员",
-          "code": "super_admin",
-          "description": "系统超级管理员，拥有所有权限"
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "admin": {
+            "id": 1,
+            "username": "lwhadmin",
+            "email": "admin@example.com",
+            "roles": [
+                {
+                    "name": "超级管理员",
+                    "description": "系统超级管理员，拥有所有权限"
+                }
+            ]
         }
-      ]
     }
-  }
 }
 ```
 
@@ -174,31 +144,36 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "id": 1,
-    "username": "admin",
-    "email": "admin@example.com",
-    "status": 1,
-    "last_login": "2024-01-20T10:00:00Z",
-    "created_at": "2024-01-20T10:00:00Z",
-    "roles": [
-      {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
         "id": 1,
-        "name": "超级管理员",
-        "code": "super_admin",
-        "description": "系统超级管理员，拥有所有权限"
-      }
-    ],
-    "permissions": [
-      {
-        "id": 1,
-        "name": "用户列表",
-        "code": "user:list",
-        "description": "查看用户列表"
-      }
-    ]
-  }
+        "username": "lwhadmin",
+        "email": "admin@example.com",
+        "status": 1,
+        "created_at": "2024-12-28T14:44:55.000Z",
+        "last_login": "2025-01-03T06:10:59.000Z",
+        "roles": [
+            {
+                "name": "超级管理员",
+                "description": "系统超级管理员，拥有所有权限"
+            }
+        ],
+        "permissions": [
+            {
+                "name": "管理员列表",
+                "code": "admin:list"
+            },
+            {
+                "name": "创建管理员",
+                "code": "admin:create"
+            },
+            {
+                "name": "更新管理员",
+                "code": "admin:update"
+            }
+        ]
+    }
 }
 ```
 
@@ -247,26 +222,28 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "total": 100,
-    "page": 1,
-    "limit": 10,
-    "items": [
-      {
-        "id": 1,
-        "username": "test_user",
-        "email": "test@example.com",
-        "points": 100,
-        "status": 1,
-        "created_at": "2024-01-20T10:00:00Z",
-        "profile": {
-          "bio": "用户简介",
-          "profile_picture": "/uploads/avatars/user-123456.jpg"
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "username": "testuser1",
+                "password": "$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS",
+                "email": "test1@example.com",
+                "points": 100,
+                "status": 1,
+                "created_at": "2024-12-28T14:44:55.000Z",
+                "bio": "这是测试用户1的简介",
+                "profile_picture": null
+            }
+        ],
+        "pagination": {
+            "total": 1,
+            "page": 1,
+            "limit": 10
         }
-      }
-    ]
-  }
+    }
 }
 ```
 
@@ -286,33 +263,20 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "id": 1,
-    "username": "test_user",
-    "email": "test@example.com",
-    "points": 100,
-    "status": 1,
-    "created_at": "2024-01-20T10:00:00Z",
-    "profile": {
-      "bio": "用户简介",
-      "profile_picture": "/uploads/avatars/user-123456.jpg"
-    },
-    "recent_moments": [
-      {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
         "id": 1,
-        "content": "动态内容",
-        "created_at": "2024-01-20T10:00:00Z",
-        "images": [
-          {
-            "id": 1,
-            "image_url": "/uploads/moments/moment-123456.jpg",
-            "created_at": "2024-01-20T10:00:00Z"
-          }
-        ]
-      }
-    ]
-  }
+        "username": "testuser1",
+        "password": "$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS",
+        "email": "test1@example.com",
+        "points": 100,
+        "status": 1,
+        "created_at": "2024-12-28T14:44:55.000Z",
+        "bio": "这是测试用户1的简介",
+        "profile_picture": null,
+        "recent_moments": []
+    }
 }
 ```
 
@@ -338,8 +302,8 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "message": "用户状态修改成功"
+    "code": 200,
+    "message": "用户启用成功"
 }
 ```
 
@@ -359,8 +323,8 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "message": "用户删除成功"
+    "code": 200,
+    "message": "用户删除成功"
 }
 ```
 
@@ -375,18 +339,31 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "total_users": 1000,
-    "today_new_users": 10,
-    "monthly_active_users": 500,
-    "growth_trend": [
-      {
-        "date": "2024-01-20",
-        "count": 5
-      }
-    ]
-  }
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "total_users": 8,
+        "today_new_users": 0,
+        "monthly_active_users": 2,
+        "growth_trend": [
+            {
+                "date": "2024-12-27T16:00:00.000Z",
+                "count": 1
+            },
+            {
+                "date": "2024-12-28T16:00:00.000Z",
+                "count": 4
+            },
+            {
+                "date": "2024-12-31T16:00:00.000Z",
+                "count": 1
+            },
+            {
+                "date": "2025-01-01T16:00:00.000Z",
+                "count": 2
+            }
+        ]
+    }
 }
 ```
 
@@ -411,31 +388,25 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "total": 100,
-    "page": 1,
-    "limit": 10,
-    "items": [
-      {
-        "id": 1,
-        "content": "动态内容",
-        "user_id": 1,
-        "user": {
-          "username": "test_user",
-          "profile_picture": "/uploads/avatars/user-123456.jpg"
-        },
-        "created_at": "2024-01-20T10:00:00Z",
-        "images": [
-          {
-            "id": 1,
-            "image_url": "/uploads/moments/moment-123456.jpg",
-            "created_at": "2024-01-20T10:00:00Z"
-          }
-        ]
-      }
-    ]
-  }
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "items": [
+            {
+                "id": 27,
+                "user_id": 3,
+                "content": "这是一条无图片的动态",
+                "created_at": "2025-01-02T14:22:37.000Z",
+                "username": "lwh",
+                "images": [] //无图片时
+            }
+        ],
+        "pagination": {
+            "total": 3,
+            "page": 1,
+            "limit": 10
+        }
+    }
 }
 ```
 
@@ -455,8 +426,8 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "message": "动态删除成功"
+    "code": 200,
+    "message": "动态删除成功"
 }
 ```
 
@@ -471,18 +442,18 @@
 #### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "total": 1000,
-    "today": 50,
-    "month": 500,
-    "trend": [
-      {
-        "date": "2024-01-20",
-        "count": 5
-      }
-    ]
-  }
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "total_moments": 2,
+        "today_new_moments": 0,
+        "growth_trend": [
+            {
+                "date": "2024-12-31T16:00:00.000Z",
+                "count": 2
+            }
+        ]
+    }
 }
 ```
 
@@ -501,18 +472,28 @@
 ##### 响应示例
 ```json
 {
-  "code": 200,
-  "data": [
-    {
-      "id": 1,
-      "name": "最新资讯",
-      "code": "latest",
-      "sort_order": 1,
-      "status": 1,
-      "created_at": "2024-01-20T10:00:00Z",
-      "updated_at": "2024-01-20T10:00:00Z"
-    }
-  ]
+    "code": 200,
+    "message": "操作成功",
+    "data": [
+        {
+            "id": 1,
+            "name": "最新资讯",
+            "code": "latest",
+            "sort_order": 1,
+            "status": 1,
+            "created_at": "2024-12-28T16:56:26.000Z",
+            "updated_at": "2024-12-28T16:56:26.000Z"
+        },
+        {
+            "id": 2,
+            "name": "热点资讯",
+            "code": "hot",
+            "sort_order": 2,
+            "status": 1,
+            "created_at": "2024-12-28T16:56:26.000Z",
+            "updated_at": "2024-12-28T16:56:26.000Z"
+        }
+    ]
 }
 ```
 
@@ -531,15 +512,30 @@
 | name       | string | 是   | 分类名称 | 1. 长度2-20个字符 |
 | code       | string | 是   | 分类代码 | 1. 长度2-20个字符<br>2. 只能包含小写字母、数字、下划线<br>3. 必须以字母开头 |
 | sort_order | number | 否   | 排序     | 1. 最小值0 |
+| status | number | 否 | 状态 | 0-禁用，1-启用 |
 
-##### 响应示例
+##### 请求示例
+
 ```json
 {
-  "code": 200,
-  "data": {
-    "id": 1
-  },
-  "message": "新闻分类创建成功"
+  "name": "测试",
+  "code": "test",
+  "sort_order": 7,
+  "status": "1"
+}
+```
+
+
+
+##### 响应示例
+
+```json
+{
+    "code": 200,
+    "message": "新闻分类创建成功",
+    "data": {
+        "id": 7
+    }
 }
 ```
 
@@ -561,15 +557,27 @@
 | 参数名     | 类型   | 必填 | 说明     | 验证规则 |
 |------------|--------|------|----------|----------|
 | name       | string | 否   | 分类名称 | 长度2-20 |
+| code       | string | 是 | 分类代码 | 长度2-20 |
 | sort_order | number | 否   | 排序     | 最小0 |
-| code       | string | 否   | 分类代码 | 长度2-20 |
+| status | number | 是 | 状态 | 0-禁用，1-启用 |
 
+##### 请求示例
 
-##### 响应示例
 ```json
 {
-  "code": 200,
-  "message": "新闻分类更新成功"
+  "name": "test3",
+  "code": "test_code",
+  "sort_order": 7,
+  "status": 1
+}
+```
+
+##### 响应示例
+
+```json
+{
+    "code": 200,
+    "message": "新闻分类更新成功"
 }
 ```
 
@@ -589,8 +597,8 @@
 ##### 响应示例
 ```json
 {
-  "code": 200,
-  "message": "新闻分类删除成功"
+    "code": 200,
+    "message": "新闻分类删除成功"
 }
 ```
 
@@ -610,32 +618,44 @@
 | page         | number | 否   | 页码       | 1       |
 | limit        | number | 否   | 每页条数   | 10      |
 | category_id  | number | 否   | 分类ID     | -       |
-| is_published | number | 否   | 发布状态   | -       |
+| is_published | number | 否   | 发布状态   | - 0：未发布，1：已发布 |
 | keyword      | string | 否   | 搜索关键词 | -       |
-| is_featured  | number | 否   | 是否热门   | -       |
+| is_featured  | number | 否   | 是否热门   | - 0：未推荐，1：已推荐 |
+| status | number | 否 | 文章状态 | - 1（0：禁用，1：启用） |
 
 ##### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "total": 100,
-    "items": [
-      {
-        "id": 1,
-        "category_id": 1,
-        "category_name": "最新资讯",
-        "title": "文章标题",
-        "summary": "文章摘要",
-        "author": "作者",
-        "view_count": 0,
-        "is_featured": 0,
-        "is_published": 1,
-        "publish_time": "2024-01-20T10:00:00Z",
-        "created_at": "2024-01-20T10:00:00Z"
-      }
-    ]
-  }
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "category_id": 2,
+                "title": "标题",
+                "summary": "摘要",
+                "cover_image": "封面图片",
+                "author": "作者",
+                "source": "来源",
+                "view_count": 20,
+                "is_featured": 1,
+                "is_published": 1,
+                "status": 1,
+                "publish_time": "2024-12-30T13:22:10.000Z",
+                "created_by": 1,
+                "updated_by": 1,
+                "created_at": "2024-01-02T02:37:33.000Z",
+                "updated_at": "2024-01-02T14:52:24.000Z",
+                "category_name": "热点资讯"
+            }
+        ],
+        "pagination": {
+            "total": 1,
+            "page": 1,
+            "limit": 10
+        }
+    }
 }
 ```
 
@@ -655,29 +675,32 @@
 ##### 响应示例
 ```json
 {
-  "code": 200,
-  "data": {
-    "id": 1,
-    "category_id": 1,
-    "category_name": "最新资讯",
-    "title": "文章标题",
-    "summary": "文章摘要",
-    "content": "文章内容",
-    "cover_image": "封面图片URL",
-    "author": "作者",
-    "source": "来源",
-    "view_count": 0,
-    "is_featured": 0,
-    "is_published": 1,
-    "publish_time": "2024-01-20T10:00:00Z",
-    "created_at": "2024-01-20T10:00:00Z",
-    "updated_at": "2024-01-20T10:00:00Z",
-    "creator_name": "创建人"
-  }
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "id": 1,
+        "category_id": 2,
+        "title": "标题",
+        "summary": "摘要",
+        "content": "文章内容",
+        "cover_image": "封面图片",
+        "author": "作者",
+        "source": "来源",
+        "view_count": 20,
+        "is_featured": 1,
+        "is_published": 1,
+        "publish_time": "2024-12-30T13:22:10.000Z",
+        "status": 1,
+        "created_by": 1,
+        "updated_by": 1,
+        "created_at": "2024-01-02T02:37:33.000Z",
+        "updated_at": "2024-01-02T14:52:24.000Z",
+        "category_name": "热点资讯"
+    }
 }
 ```
 
-### 4.2.3 创建文章
+#### 4.2.1 创建文章
 
 ##### 请求信息
 - **接口**: `/news/articles`
@@ -687,30 +710,32 @@
 - **Content-Type**: `application/json`
 
 ##### 请求参数
-| 参数名       | 类型   | 必填 | 说明       | 验证规则 |
-|--------------|--------|------|------------|----------|
-| category_id  | number | 是   | 分类ID     | 大于0 |
-| title        | string | 是   | 标题       | 长度2-100 |
-| summary      | string | 否   | 摘要       | 长度0-200 |
-| content      | string/object | 是 | 内容   | HTML或Quill Delta格式 |
-| cover_image  | string | 否   | 封面图片   | 有效的URL |
-| author       | string | 是   | 作者       | 长度2-20 |
-| source       | string | 否   | 来源       | 长度0-50 |
-| is_featured  | number | 否   | 是否热门   | 0或1 |
-| is_published | number | 否   | 是否发布   | 0或1 |
+| 参数名       | 类型   | 必填 | 说明     | 验证规则 |
+|--------------|--------|------|----------|----------|
+| category_id  | number | 是   | 分类ID   | 大于0的整数 |
+| title        | string | 是   | 文章标题 | 长度：1-100字符 |
+| content      | string/object | 是 | 文章内容 | 支持HTML或Quill Delta格式 |
+| summary      | string | 否   | 文章摘要 | 长度：0-200字符，不提供时自动从content生成 |
+| cover_image  | string | 否   | 封面图片 | 必须是通过图片上传接口获得的URL |
+| author       | string | 否   | 作者     | 长度：0-50字符 |
+| source       | string | 否   | 来源     | 长度：0-100字符 |
+| is_featured  | number | 否   | 是否推荐 | 0或1，默认0 |
+| is_published | number | 否   | 是否发布 | 0或1，默认0 |
+| publish_time | string | 否   | 发布时间 | ISO 8601格式，不提供时取当前时间 |
 
 ##### 请求示例（HTML格式）
 ```json
 {
   "category_id": 1,
   "title": "示例新闻标题",
+  "content": "<h1>新闻标题</h1><p>这是一段新闻正文，支持HTML格式。</p><p><strong>粗体文本</strong></p><p><em>斜体文本</em></p><p><a href='https://example.com' target='_blank' rel='noopener noreferrer'>链接文本</a></p><p><img src='/uploads/news/news-1704321234567-123456789.jpg' alt='示例图片' style='max-width: 100%'/></p><ul><li>列表项1</li><li>列表项2</li></ul><blockquote><p>这是一段引用文本</p></blockquote>",
   "summary": "这是一篇示例新闻的摘要内容",
-  "content": "<h1>新闻标题</h1><p>这是一段新闻正文，支持HTML格式。</p><p><strong>粗体文本</strong></p><p><em>斜体文本</em></p><p><a href='https://example.com'>链接文本</a></p><p><img src='https://example.com/image.jpg' alt='图片描述'/></p>",
-  "cover_image": "/uploads/news/cover-123456.jpg",
+  "cover_image": "/uploads/news/news-1704321234567-987654321.jpg",
   "author": "张三",
   "source": "官方发布",
   "is_featured": 1,
-  "is_published": 1
+  "is_published": 1,
+  "publish_time": "2024-01-20T10:00:00.000Z"
 }
 ```
 
@@ -719,17 +744,16 @@
 {
   "category_id": 1,
   "title": "示例新闻标题",
-  "summary": "这是一篇示例新闻的摘要内容",
   "content": {
     "ops": [
       {
-        "insert": "新闻标题\n",
+        "insert": "新闻标题",
         "attributes": {
           "header": 1
         }
       },
       {
-        "insert": "这是普通段落文本。\n"
+        "insert": "\n这是一段普通段落文本。\n"
       },
       {
         "insert": "这是粗体文本",
@@ -751,7 +775,34 @@
       },
       {
         "insert": {
-          "image": "https://example.com/image.jpg"
+          "image": "/uploads/news/news-1704321234567-123456789.jpg"
+        },
+        "attributes": {
+          "style": {
+            "max-width": "100%"
+          },
+          "alt": "示例图片"
+        }
+      },
+      {
+        "insert": "\n"
+      },
+      {
+        "insert": "列表项1",
+        "attributes": {
+          "list": "bullet"
+        }
+      },
+      {
+        "insert": "列表项2",
+        "attributes": {
+          "list": "bullet"
+        }
+      },
+      {
+        "insert": "这是一段引用文本",
+        "attributes": {
+          "blockquote": true
         }
       },
       {
@@ -759,11 +810,13 @@
       }
     ]
   },
-  "cover_image": "/uploads/news/cover-123456.jpg",
+  "summary": "这是一篇示例新闻的摘要内容",
+  "cover_image": "/uploads/news/news-1704321234567-987654321.jpg",
   "author": "张三",
   "source": "官方发布",
   "is_featured": 1,
-  "is_published": 1
+  "is_published": 1,
+  "publish_time": "2024-01-20T10:00:00.000Z"
 }
 ```
 
@@ -771,78 +824,30 @@
 ```json
 {
   "code": 200,
+  "message": "新闻文章创建成功",
   "data": {
-    "id": 1,
-    "title": "示例新闻标题",
-    "category_id": 1,
-    "category_name": "最新资讯",
-    "summary": "这是一篇示例新闻的摘要内容",
-    "cover_image": "/uploads/news/cover-123456.jpg",
-    "author": "张三",
-    "source": "官方发布",
-    "is_featured": 1,
-    "is_published": 1,
-    "created_at": "2024-01-20T10:00:00Z",
-    "creator_name": "admin"
-  },
-  "message": "新闻文章创建成功"
+    "id": 1
+  }
 }
 ```
 
-##### 新闻内容格式说明
+##### 注意事项
+1. 内容格式说明：
+   - HTML格式：直接传入HTML字符串
+   - Quill Delta格式：传入Quill编辑器的Delta对象
+   - 所有HTML内容都会经过安全过滤，不支持的标签和属性会被移除
+2. 图片处理：
+   - 支持在content中使用base64格式的图片，会自动转换为文件并存储
+   - 图片文件统一存储在 public/uploads/news/ 目录下
+   - 自动生成的图片文件名格式：news-时间戳-随机数.扩展名
+3. 封面图片：
+   - cover_image 必须是通过图片上传接口获得的URL
+   - URL格式：/uploads/news/news-*.jpg
+4. 摘要生成：
+   - 如果不提供summary，会自动从content中提取文本并生成摘要
+   - 自动生成的摘要最大长度为200字符
 
-新闻内容支持富文本格式,基于Quill编辑器,具体支持以下HTML标签和属性:
-
-1. 文本格式标签:
-   - p: 段落
-   - strong: 加粗
-   - em: 斜体
-   - u: 下划线
-   - s: 删除线
-   - blockquote: 引用
-   - sub: 下标
-   - sup: 上标
-
-2. 标题标签:
-   - h1 ~ h6: 6级标题
-
-3. 列表标签:
-   - ul: 无序列表
-   - ol: 有序列表 (支持start属性)
-   - li: 列表项
-
-4. 代码标签:
-   - pre: 预格式化文本
-   - code: 代码
-
-5. 表格标签:
-   - table: 表格
-   - thead: 表头
-   - tbody: 表格主体
-   - tr: 表格行
-   - td: 表格单元格
-   - th: 表头单元格
-
-6. 多媒体标签:
-   - img: 图片 (支持src/alt/width/height/style/class属性)
-   - a: 链接 (支持href/target/rel属性)
-
-7. 通用标签:
-   - div: 块级容器
-   - span: 行内容器
-   - br: 换行
-
-8. 通用属性支持:
-   - class: 样式类
-   - style: 行内样式
-
-注意: 
-1. 所有HTML内容都会经过安全过滤,不支持的标签和属性会被自动移除
-2. 内容中的base64格式图片会自动转存到服务器
-3. 图片存储路径为: /uploads/news/
-
-
-### 4.2.4 更新文章
+#### 4.2.2 更新文章
 
 ##### 请求信息
 - **接口**: `/news/articles/:articleId`
@@ -857,33 +862,45 @@
 | articleId | number | 文章ID |
 
 ##### 请求参数
-| 参数名       | 类型   | 必填 | 说明       | 验证规则 |
-|--------------|--------|------|------------|----------|
-| category_id  | number | 否   | 分类ID     | 大于0 |
-| title        | string | 否   | 标题       | 长度2-100 |
-| summary      | string | 否   | 摘要       | 长度0-200 |
-| content      | string/object | 否 | 内容   | HTML或Quill Delta格式 |
-| cover_image  | string | 否   | 封面图片   | 有效的URL |
-| author       | string | 否   | 作者       | 长度2-20 |
-| source       | string | 否   | 来源       | 长度0-50 |
-| is_featured  | number | 否   | 是否热门   | 0或1 |
-| is_published | number | 否   | 是否发布   | 0或1 |
+| 参数名       | 类型   | 必填 | 说明     | 验证规则 |
+|--------------|--------|------|----------|----------|
+| category_id  | number | 否   | 分类ID   | 大于0的整数 |
+| title        | string | 否   | 文章标题 | 长度：1-100字符 |
+| content      | string/object | 否 | 文章内容 | 支持HTML或Quill Delta格式 |
+| summary      | string | 否   | 文章摘要 | 长度：0-200字符 |
+| cover_image  | string | 否   | 封面图片 | 必须是通过图片上传接口获得的URL |
+| author       | string | 否   | 作者     | 长度：0-50字符 |
+| source       | string | 否   | 来源     | 长度：0-100字符 |
+| is_featured  | number | 否   | 是否推荐 | 0或1 |
+| is_published | number | 否   | 是否发布 | 0或1 |
+| publish_time | string | 否   | 发布时间 | ISO 8601格式 |
+| status       | number | 否   | 状态     | 0：草稿，1：正常 |
 
-##### 请求示例（部分更新）
-````json
+##### 请求示例
+```json
 {
   "title": "更新后的标题",
+  "content": "<h1>更新后的标题</h1><p>这是更新后的内容。</p><p><strong>新增的粗体文本</strong></p><p><img src='/uploads/news/news-1704321234567-123456789.jpg' alt='更新的图片' style='max-width: 100%'/></p>",
   "summary": "更新后的摘要",
+  "is_featured": 0,
+  "status": 1
+}
+```
+
+##### 更新文章请求示例（部分更新 - Quill Delta格式）
+```json
+{
+  "title": "更新后的标题",
   "content": {
     "ops": [
       {
-        "insert": "更新后的标题\n",
+        "insert": "更新后的标题",
         "attributes": {
           "header": 1
         }
       },
       {
-        "insert": "这是更新后的内容。\n"
+        "insert": "\n这是更新后的内容。\n"
       },
       {
         "insert": "新增的粗体文本",
@@ -893,39 +910,54 @@
       },
       {
         "insert": "\n"
+      },
+      {
+        "insert": {
+          "image": "/uploads/news/news-1704321234567-123456789.jpg"
+        },
+        "attributes": {
+          "style": {
+            "max-width": "100%"
+          },
+          "alt": "更新的图片"
+        }
+      },
+      {
+        "insert": "\n"
       }
     ]
   },
-  "is_featured": 0
+  "summary": "更新后的摘要",
+  "is_featured": 0,
+  "status": 1
 }
-````
+```
 
 ##### 响应示例
-````json
+```json
 {
   "code": 200,
-  "message": "新闻文章更新成功",
-  "data": {
-    "id": 1,
-    "title": "更新后的标题",
-    "category_id": 1,
-    "category_name": "最新资讯",
-    "summary": "更新后的摘要",
-    "is_featured": 0,
-    "updated_at": "2024-01-20T10:30:00Z"
-  }
+  "message": "新闻文章更新成功"
 }
-````
+```
 
 ##### 注意事项
 1. 所有字段都是可选的，支持部分字段更新
-2. content字段支持HTML和Quill Delta两种格式
-3. 如果提供content，会自动：
-   - 将Quill Delta格式转换为HTML
-   - 处理base64格式的图片并保存到服务器
-   - 清理不再使用的图片文件
-4. 如果未提供summary，会自动从content中提取摘要
-5. 当is_published从0改为1时，会自动更新publish_time为当前时间
+2. 内容处理：
+   - 支持HTML和Quill Delta两种格式
+   - 如果提供content，会自动：
+     - 将Quill Delta格式转换为HTML
+     - 处理base64格式的图片并保存到服务器
+     - 清理不再使用的图片文件
+3. 摘要处理：
+   - 如果提供了新的content但未提供summary
+   - 会自动从新的content中提取摘要
+4. 图片处理：
+   - 更新content时会自动清理不再使用的图片
+   - 更新cover_image时会自动清理旧的封面图片
+5. 发布状态：
+   - 当is_published从0改为1时，会自动更新publish_time为当前时间
+   - 如果同时提供了publish_time，则使用提供的时间
 
 
 #### 4.2.5 删除文章
@@ -1015,28 +1047,35 @@
 #### 请求参数
 | 参数名 | 类型 | 必填 | 说明     | 验证规则 |
 |--------|------|------|----------|----------|
-| image  | file | 是   | 图片文件 | 1. 大小限制：5MB<br>2. 格式：jpg, jpeg, png, gif, webp<br>3. 图片尺寸：最大 2000x2000 像素 |
+| image  | file | 是   | 图片文件 | 1. 大小限制：5MB<br>2. 格式：jpg, jpeg, png, gif, webp |
 
 #### 响应示例
-````json
+```json
 {
   "code": 200,
   "message": "图片上传成功",
   "data": {
-    "url": "/uploads/news/202401/image-123456789.jpg"
+    "url": "/uploads/news/news-1704321234567-123456789.jpg"
   }
 }
-````
+```
 
 #### 注意事项
 1. 图片存储规则：
    - 存储路径：public/uploads/news/
-   - 文件命名：时间戳-随机数.扩展名
+   - 文件命名格式：news-时间戳-随机数.扩展名
    - 自动创建存储目录（如果不存在）
 2. 图片限制：
    - 文件大小：最大5MB
    - 支持格式：jpg、jpeg、png、gif、webp
 3. 返回的url为相对路径，前端需要拼接域名使用
+4. 图片处理：
+   - 文章内容中的base64图片会自动转换为文件并存储
+   - 删除文章时会自动清理相关的图片文件
+   - 更新文章时会自动清理不再使用的图片
+5. 图片访问：
+   - 图片通过 /uploads/news/* 路径可直接访问
+   - 支持跨域访问和缓存控制
 
 
 
@@ -1145,12 +1184,24 @@
 
 2. 所有时间字段均使用 ISO 8601 格式的 UTC 时间
 
-3. 图片上传相关说明：
-   - 使用 multipart/form-data 格式
-   - 支持格式：jpeg, jpg, png, gif, webp
-   - 大小限制：5MB
-   - 存储路径：public/uploads/news/
-   - 文件命名：时间戳-随机数.扩展名
+3. 图片上传和处理：
+   - 上传方式：
+     - 通过 /news/upload 接口直接上传图片文件
+     - 在文章内容中使用 base64 格式的图片（会自动转换为文件）
+   - 存储规则：
+     - 统一存储在 public/uploads/news/ 目录下
+     - 文件命名格式：news-时间戳-随机数.扩展名
+     - 自动创建存储目录（如果不存在）
+   - 文件限制：
+     - 支持格式：jpeg, jpg, png, gif, webp
+     - 大小限制：5MB
+   - 图片清理：
+     - 删除文章时自动清理相关的所有图片
+     - 更新文章时自动清理不再使用的图片
+     - 更新封面图片时自动清理旧的封面图片
+   - 图片访问：
+     - 通过 /uploads/news/* 路径直接访问
+     - 支持跨域访问和缓存控制
 
 4. 文章内容支持两种格式：
    - HTML 格式：直接传入 HTML 字符串
@@ -1165,3 +1216,32 @@
 6. 权限验证：
    - 每个接口都需要相应的权限
    - 具体权限要求见各接口说明
+
+7. 新闻内容格式说明：
+   - 支持的HTML标签：
+     - 文本格式：p, strong, em, u, s, blockquote, sub, sup
+     - 标题：h1 ~ h6
+     - 列表：ul, ol, li
+     - 代码：pre, code
+     - 表格：table, thead, tbody, tr, td, th
+     - 多媒体：img, a
+     - 通用：div, span, br
+   - 支持的属性：
+     - 通用：class, style
+     - 链接：href, target, rel
+     - 图片：src, alt, width, height, style, class
+     - 列表：start
+     - 表格：colspan, rowspan
+   - 支持的样式：
+     - 文本对齐：left, right, center, justify
+     - 颜色：文本颜色、背景色
+     - 字体：大小、行高
+     - 缩进：padding-left, margin-left
+     - 图片：width, height, max-width, max-height
+
+2. 所有时间字段说明：
+   - 支持 ISO 8601 格式：`YYYY-MM-DDThh:mm:ssZ`
+   - 数据库使用 TIMESTAMP 类型存储，自动处理时区转换
+   - 示例：
+     - 创建/更新文章时：`2024-01-20T10:00:00Z`
+     - 响应数据中：`2024-01-20T10:00:00.000Z`

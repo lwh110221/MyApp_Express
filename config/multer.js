@@ -5,12 +5,22 @@ const path = require('path');
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     // 根据上传类型选择不同的目录
-    const uploadType = req.path.includes('avatar') ? 'avatars' : 'moments';
+    let uploadType = 'moments';
+    if (req.path.includes('avatar')) {
+      uploadType = 'avatars';
+    } else if (req.path.includes('news')) {
+      uploadType = 'news';
+    }
     cb(null, `public/uploads/${uploadType}`);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const fileType = req.path.includes('avatar') ? 'avatar' : 'moment';
+    let fileType = 'moment';
+    if (req.path.includes('avatar')) {
+      fileType = 'avatar';
+    } else if (req.path.includes('news')) {
+      fileType = 'news';
+    }
     cb(null, `${fileType}-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
 });

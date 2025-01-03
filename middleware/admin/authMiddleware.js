@@ -1,13 +1,13 @@
 const jwt = require('jsonwebtoken');
 const pool = require('../../config/database');
-const { errorResponse } = require('../../utils/responseUtil');
+const ResponseUtil = require('../../utils/responseUtil');
 
 // 验证管理员token
 const verifyAdminToken = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return errorResponse(res, '未提供token', 401);
+            return ResponseUtil.error(res, '未提供token', 401);
         }
 
         const token = authHeader.split(' ')[1];
@@ -20,12 +20,12 @@ const verifyAdminToken = async (req, res, next) => {
         );
 
         if (admins.length === 0) {
-            return errorResponse(res, '管理员不存在', 401);
+            return ResponseUtil.error(res, '管理员不存在', 401);
         }
 
         const admin = admins[0];
         if (!admin.status) {
-            return errorResponse(res, '管理员账号已被禁用', 403);
+            return ResponseUtil.error(res, '管理员账号已被禁用', 403);
         }
 
         // 获取管理员角色和权限
@@ -54,13 +54,13 @@ const verifyAdminToken = async (req, res, next) => {
         next();
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {
-            return errorResponse(res, '无效的token', 401);
+            return ResponseUtil.error(res, '无效的token', 401);
         }
         if (error.name === 'TokenExpiredError') {
-            return errorResponse(res, 'token已过期', 401);
+            return ResponseUtil.error(res, 'token已过期', 401);
         }
         console.error('Token验证失败:', error);
-        return errorResponse(res, '权限验证失败', 500);
+        return ResponseUtil.error(res, '权限验证失败', 500);
     }
 };
 
@@ -68,11 +68,11 @@ const verifyAdminToken = async (req, res, next) => {
 const checkPermission = (permissionCode) => {
     return (req, res, next) => {
         if (!req.admin || !req.admin.permissions) {
-            return errorResponse(res, '未授权访问', 401);
+            return ResponseUtil.error(res, '未授权访问', 401);
         }
 
         if (!req.admin.permissions.includes(permissionCode)) {
-            return errorResponse(res, '没有操作权限', 403);
+            return ResponseUtil.error(res, '没有操作权限', 403);
         }
 
         next();
