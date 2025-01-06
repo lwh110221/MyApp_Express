@@ -3,7 +3,7 @@ const path = require('path');
 
 // 配置存储
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: function (req, _file, cb) {
     // 根据上传类型选择不同的目录
     let uploadType = 'moments';
     if (req.originalUrl.includes('/avatar')) {
