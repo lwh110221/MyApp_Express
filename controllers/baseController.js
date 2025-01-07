@@ -1,6 +1,6 @@
 const ResponseUtil = require('../utils/responseUtil');
 const { AppError, NotFoundError } = require('../utils/errors');
-const logger = require('../config/logger');
+const logger = require('../utils/logger');
 
 class BaseController {
   constructor() {
@@ -42,20 +42,45 @@ class BaseController {
 
   // 记录信息日志
   logInfo(message, meta = {}) {
-    logger.info(message, meta);
+    logger.info(message, { context: this.constructor.name, ...meta });
   }
 
   // 记录警告日志
   logWarn(message, meta = {}) {
-    logger.warn(message, meta);
+    logger.warn(message, { context: this.constructor.name, ...meta });
   }
 
   // 记录错误日志
-  logError(message, error) {
-    logger.error(message, {
-      message: error.message,
-      stack: error.stack,
-      ...error
+  logError(error, meta = {}) {
+    logger.logError(error, this.constructor.name, meta);
+  }
+
+  // 记录业务操作日志
+  logBusiness(action, message, meta = {}) {
+    logger.logBusiness(action, message, { 
+      context: this.constructor.name,
+      ...meta 
+    });
+  }
+
+  // 记录数据库操作日志
+  logDatabase(operation, sql, params, result) {
+    logger.logDatabase(operation, sql, params, result);
+  }
+
+  // 记录性能日志
+  logPerformance(operation, duration, meta = {}) {
+    logger.logPerformance(operation, duration, {
+      context: this.constructor.name,
+      ...meta
+    });
+  }
+
+  // 记录安全相关日志
+  logSecurity(event, meta = {}) {
+    logger.logSecurity(event, {
+      context: this.constructor.name,
+      ...meta
     });
   }
 

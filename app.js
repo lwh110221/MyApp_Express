@@ -15,6 +15,7 @@ const adminRoutes = require('./routes/admin');
 const newsRoutes = require('./routes/newsRoutes');
 const ResponseUtil = require('./utils/responseUtil');
 const identityRoutes = require('./routes/identityRoutes');
+const loggerMiddleware = require('./middleware/loggerMiddleware');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -119,6 +120,9 @@ app.use((req, res) => {
 
 // 错误处理中间件
 app.use(errorHandler);
+
+// 使用日志中间件
+app.use(loggerMiddleware);
 
 // 优雅关闭
 process.on('SIGTERM', () => {
