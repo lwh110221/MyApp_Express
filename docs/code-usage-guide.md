@@ -1,5 +1,17 @@
 # 项目工具类使用规范指南
 
+## 目录
+1. [ResponseUtil 响应工具](#1-responseutil-响应工具使用规范)
+2. [BaseController 基础控制器](#2-basecontroller-基础控制器使用规范) 
+3. [数据库操作](#3-数据库连接池使用规范)
+4. [认证中间件](#4-认证中间件使用规范)
+5. [日志工具](#5-日志工具使用规范)
+6. [文件上传](#6-文件上传工具使用规范)
+7. [错误处理](#7-错误处理规范)
+8. [JSON数据处理](#8-json-数据处理规范)
+9. [身份验证](#9-身份验证使用规范)
+10. [验证码处理](#10-验证码使用规范)
+
 ## 1. ResponseUtil 响应工具使用规范
 
 ### 1.1 基本用法
@@ -56,9 +68,16 @@ const { page, limit, skip } = this.getPaginationParams(req);
 // 排序参数获取
 const sort = this.getSortParams(req);
 
+// 搜索参数获取
+const searchParams = this.getSearchParams(req, ['name', 'description']);
+
 // 日志记录
 this.logInfo('操作信息', { userId: req.userData.userId });
 this.logError('错误信息', error);
+this.logBusiness('创建用户', '用户注册成功', { userId });
+this.logDatabase('INSERT', sql, params, result);
+this.logPerformance('查询用户列表', duration);
+this.logSecurity('密码修改', { userId });
 ```
 
 ## 3. 数据库连接池使用规范
@@ -100,7 +119,7 @@ try {
   return ResponseUtil.success(res, null, '操作成功');
 } catch (error) {
   await connection.rollback();
-  console.error('操作失败:', error);
+  this.logError('操作失败:', error);
   return ResponseUtil.error(res, '操作失败', 500);
 } finally {
   connection.release();
@@ -121,7 +140,7 @@ const userId = req.userData.userId;
 
 // 用户认证检查
 if (!req.userData?.userId) {
-  return ResponseUtil.error(res, '用户未认证', 401);
+  throw new AuthenticationError('用户未认证');
 }
 ```
 
@@ -137,12 +156,12 @@ const adminId = req.admin.id;
 
 // 管理员认证检查
 if (!req.admin?.id) {
-  return ResponseUtil.error(res, '管理员未认证', 401);
+  throw new AuthenticationError('管理员未认证');
 }
 
 // 权限检查
 if (!req.admin.permissions.includes('permission:code')) {
-  return ResponseUtil.error(res, '没有操作权限', 403);
+  throw new AuthorizationError('没有操作权限');
 }
 ```
 
@@ -151,31 +170,38 @@ if (!req.admin.permissions.includes('permission:code')) {
 ### 5.1 错误日志
 ```javascript
 // 记录错误详情
-console.error('操作失败:', error);
+this.logError('操作失败', error);
 
 // 记录带上下文的错误
-console.error(`用户 ${userId} 操作失败:`, error);
+this.logError(`用户 ${userId} 操作失败`, error, { userId });
 
 // 记录详细错误信息
-console.error('操作失败:', {
-  error: error.message,
-  stack: error.stack,
-  userId: req.userData?.userId
+this.logError('操作失败', error, {
+  userId: req.userData?.userId,
+  requestId: req.id,
+  path: req.path
 });
 ```
 
-### 5.2 调试日志
+### 5.2 业务日志
 ```javascript
 // 记录请求信息
-console.info('开始处理请求:', {
+this.logInfo('开始处理请求', {
   method: req.method,
   path: req.path,
   query: req.query,
   body: req.body
 });
 
-// 记录关键操作
-console.debug('数据处理结果:', result);
+// 记录业务操作
+this.logBusiness('创建订单', '订单创建成功', {
+  orderId,
+  userId,
+  amount
+});
+
+// 记录性能指标
+this.logPerformance('数据库查询', queryDuration);
 ```
 
 ## 6. 文件上传工具使用规范
@@ -196,33 +222,71 @@ const filePath = file.path;
 const fileName = file.originalname;
 ```
 
+### 6.2 文件上传配置
+```javascript
+// 支持的文件类型
+const allowedMimes = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp'
+];
+
+// 文件大小限制
+const limits = {
+  fileSize: 5 * 1024 * 1024, // 5MB
+  files: 5 // 最多5个文件
+};
+
+// 存储路径配置
+const storage = {
+  news: 'public/uploads/news/',
+  avatar: 'public/uploads/avatars/',
+  moment: 'public/uploads/moments/'
+};
+```
+
 ## 7. 错误处理规范
 
-### 7.1 异常捕获
+### 7.1 自定义错误类使用
 ```javascript
+const { 
+  AppError, 
+  ValidationError,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError 
+} = require('../utils/errors');
+
+// 参数验证错误
+throw new ValidationError('参数不完整', errors);
+
+// 认证错误
+throw new AuthenticationError('用户未认证');
+
+// 权限错误
+throw new AuthorizationError('没有操作权限');
+
+// 资源未找到
+throw new NotFoundError('用户不存在');
+
+// 通用应用错误
+throw new AppError('操作失败', 500);
+```
+
+### 7.2 错误处理中间件
+```javascript
+const errorHandler = require('../middleware/errorHandler');
+
+// 注册错误处理中间件
+app.use(errorHandler);
+
+// 错误处理示例
 try {
   // 业务逻辑
 } catch (error) {
-  console.error('错误描述:', error);
-  return ResponseUtil.error(res, '用户友好的错误信息', 500);
-}
-```
-
-### 7.2 数据验证
-```javascript
-// 参数验证
-if (!userId || !data) {
-  return ResponseUtil.error(res, '参数不完整', 400);
-}
-
-// 业务规则验证
-if (amount <= 0) {
-  return ResponseUtil.error(res, '金额必须大于0', 400);
-}
-
-// 权限验证
-if (!req.admin.permissions.includes('required:permission')) {
-  return ResponseUtil.error(res, '没有操作权限', 403);
+  this.logError('操作失败', error);
+  throw new AppError('操作失败，请稍后重试', 500);
 }
 ```
 
@@ -236,7 +300,7 @@ try {
     ? JSON.parse(field) 
     : field || {};
 } catch (error) {
-  console.error('JSON解析错误:', error);
+  this.logError('JSON解析错误', error);
   return {};
 }
 ```
@@ -251,48 +315,79 @@ await pool.query(
 );
 ```
 
-## 9. 常见错误处理示例
+## 9. 身份验证使用规范
 
-### 9.1 数据库操作错误
+### 9.1 身份验证中间件
 ```javascript
-try {
-  const [rows] = await pool.query(sql, params);
-  if (!rows.length) {
-    return ResponseUtil.error(res, '未找到相关数据', 404);
-  }
-} catch (error) {
-  console.error('数据库查询错误:', error);
-  return ResponseUtil.error(res, '数据查询失败', 500);
-}
+const identityCheck = require('../middleware/identityCheck');
+
+// 单一身份验证
+router.use('/api/farmer', 
+  identityCheck('FARMER'), 
+  farmerRoutes
+);
+
+// 多身份验证 (ANY模式)
+router.use('/api/business', 
+  identityCheck(['FARMER', 'DEALER'], { mode: 'ANY' }), 
+  businessRoutes
+);
+
+// 多身份验证 (ALL模式)
+router.use('/api/special', 
+  identityCheck(['EXPERT', 'DEALER'], { mode: 'ALL' }), 
+  specialRoutes
+);
 ```
 
-### 9.2 文件操作错误
+### 9.2 身份类型常量
 ```javascript
-try {
-  // 文件处理逻辑
-} catch (error) {
-  console.error('文件处理错误:', error);
-  return ResponseUtil.error(res, '文件处理失败', 500);
+const { IdentityTypes } = require('../config/identityTypes');
+
+// 获取身份类型信息
+const farmerInfo = IdentityTypes.FARMER;
+
+// 检查是否需要认证
+if (farmerInfo.needCertification) {
+  // 处理认证逻辑
 }
+
+// 获取认证要求
+const requirements = farmerInfo.certificationRequirements;
 ```
 
-### 9.3 认证错误
+## 10. 验证码使用规范
+
+### 10.1 生成验证码
 ```javascript
-// 用户认证错误
-if (!req.userData?.userId) {
-  console.error('用户未认证');
-  return ResponseUtil.error(res, '用户未认证', 401);
+const captchaController = require('../controllers/captchaController');
+
+// 路由配置
+router.get('/captcha', captchaController.generateCaptcha);
+
+// 验证码配置
+const captchaOptions = {
+  size: 4,        // 验证码长度
+  noise: 2,       // 干扰线条数
+  color: true,    // 字符颜色
+  background: '#f0f0f0'  // 背景色
+};
+```
+
+### 10.2 验证码验证
+```javascript
+// 中间件使用
+router.post('/login', 
+  captchaController.verifyCaptcha,
+  loginController.login
+);
+
+// 手动验证
+if (!req.session.captcha || captcha.toLowerCase() !== req.session.captcha) {
+  throw new ValidationError('验证码错误');
 }
 
-// 管理员认证错误
-if (!req.admin?.id) {
-  console.error('管理员未认证');
-  return ResponseUtil.error(res, '管理员未认证', 401);
-}
+// 验证后清除session中的验证码
+req.session.captcha = null;
+```
 
-// 权限错误
-if (!req.admin.permissions.includes('required:permission')) {
-  console.error('没有操作权限');
-  return ResponseUtil.error(res, '没有操作权限', 403);
-}
-``` 
