@@ -222,3 +222,55 @@ INSERT INTO news_categories (name, code, sort_order) VALUES
 ('政策资讯', 'policy', 3),
 ('每周周刊', 'weekly', 4);
 
+-- 用户身份表
+CREATE TABLE IF NOT EXISTS user_identities (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL COMMENT '用户ID',
+  identity_type VARCHAR(50) NOT NULL COMMENT '身份类型编码',
+  status TINYINT DEFAULT 1 COMMENT '状态：0-无效 1-有效',
+  certification_time DATETIME COMMENT '认证时间',
+  expiration_time DATETIME COMMENT '过期时间',
+  meta_data JSON COMMENT '身份扩展信息',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `uk_user_identity` (`user_id`, `identity_type`),
+  INDEX `idx_identity_status` (`identity_type`, `status`),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户身份表';
+
+-- 身份认证记录表
+CREATE TABLE IF NOT EXISTS identity_certifications (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL COMMENT '用户ID',
+  identity_type VARCHAR(50) NOT NULL COMMENT '身份类型编码',
+  status TINYINT DEFAULT 0 COMMENT '状态：0-待审核 1-通过 2-拒绝',
+  certification_data JSON COMMENT '认证资料',
+  review_comment TEXT COMMENT '审核意见',
+  reviewer_id BIGINT COMMENT '审核人ID',
+  review_time DATETIME COMMENT '审核时间',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_user_status` (`user_id`, `status`),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (reviewer_id) REFERENCES admins(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='身份认证记录表';
+
+-- 添加身份认证相关权限
+INSERT INTO permissions (name, code, description) VALUES 
+('身份认证列表', 'identity:certification:list', '查看身份认证申请列表'),
+('身份认证审核', 'identity:certification:review', '审核身份认证申请'),
+('身份统计信息', 'identity:stats', '查看身份认证统计信息'),
+('身份类型管理', 'identity:type:manage', '管理身份类型配置');
+
+-- 为超级管理员角色分配身份认证相关权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 1, id FROM permissions WHERE code LIKE 'identity:%';
+
+-- 为管理员角色分配身份认证基础权限（除了类型管理）
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 2, id FROM permissions WHERE code IN (
+  'identity:certification:list',
+  'identity:certification:review',
+  'identity:stats'
+);
+

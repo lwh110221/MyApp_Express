@@ -14,6 +14,7 @@ const errorHandler = require('./middleware/errorHandler');
 const adminRoutes = require('./routes/admin');
 const newsRoutes = require('./routes/newsRoutes');
 const ResponseUtil = require('./utils/responseUtil');
+const identityRoutes = require('./routes/identityRoutes');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -109,6 +110,7 @@ app.use('/api/moments', momentRoutes);
 app.use('/api/captcha', captchaRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api/identities', identityRoutes);
 
 // 404 处理
 app.use((req, res) => {

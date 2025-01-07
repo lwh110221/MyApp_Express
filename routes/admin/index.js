@@ -9,6 +9,7 @@ const userManageRoutes = require('./userManageRoutes');
 const momentManageRoutes = require('./momentManageRoutes');
 const newsRoutes = require('./newsRoutes');
 const logManageRoutes = require('./logManageRoutes');
+const identityManageRoutes = require('./identityManageRoutes');
 
 // 注册路由
 router.use('/auth', authRoutes);
@@ -22,5 +23,8 @@ router.use('/users', userManageRoutes);
 router.use('/moments', momentManageRoutes);
 router.use('/news', newsRoutes);
 router.use('/logs', logManageRoutes);
+
+// 注册身份管理路由
+router.use('/identities', identityManageRoutes);
 
 module.exports = router; 
