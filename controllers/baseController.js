@@ -1,4 +1,4 @@
-const ApiResponse = require('../utils/response');
+const ResponseUtil = require('../utils/responseUtil');
 const { AppError, NotFoundError } = require('../utils/errors');
 const logger = require('../config/logger');
 
@@ -22,12 +22,12 @@ class BaseController {
 
   // 成功响应
   success(res, data = null, message = '操作成功', statusCode = 200) {
-    res.status(statusCode).json(ApiResponse.success(data, message));
+    ResponseUtil.success(res, data, message, statusCode);
   }
 
   // 分页响应
   paginate(res, data, total, page, limit) {
-    res.status(200).json(ApiResponse.pagination(data, total, page, limit));
+    ResponseUtil.page(res, { list: data, total, page, pageSize: limit });
   }
 
   // 错误响应
@@ -36,7 +36,7 @@ class BaseController {
   }
 
   // 404错误
-  notFound(message = '���源未找到') {
+  notFound(message = '资源未找到') {
     throw new NotFoundError(message);
   }
 
