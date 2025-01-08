@@ -582,6 +582,147 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
+## 5. 身份认证模块
+
+### 5.1 获取身份类型列表
+
+#### 请求信息
+- **接口**: `/identities/types`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "获取身份类型列表成功",
+    "data": [
+        {
+            "code": "NORMAL",
+            "name": "普通用户",
+            "needCertification": false
+        },
+        {
+            "code": "FARMER",
+            "name": "农户",
+            "needCertification": true,
+            "requirements": {
+                "requiredFields": [
+                    "idCard",
+                    "landCertificate"
+                ],
+                "description": "需要提供身份证和土地证明"
+            }
+        },
+        {
+            "code": "DEALER",
+            "name": "经销商",
+            "needCertification": true,
+            "requirements": {
+                "requiredFields": [
+                    "businessLicense",
+                    "foodPermit"
+                ],
+                "description": "需要提供营业执照和食品经营许可证"
+            }
+        },
+        {
+            "code": "EXPERT",
+            "name": "农业专家",
+            "needCertification": true,
+            "requirements": {
+                "requiredFields": [
+                    "professionalCert",
+                    "workProof"
+                ],
+                "description": "需要提供职称证书和工作证明"
+            }
+        }
+    ]
+}
+```
+
+### 5.2 获取当前用户身份列表
+
+#### 请求信息
+- **接口**: `/identities/my`
+- **方法**: `GET`
+- **需要认证**: 是
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "获取用户身份列表成功",
+    "data": [
+        {
+            "id": 1,
+            "user_id": 3,
+            "identity_type": "FARMER",
+            "status": 1,
+            "certification_time": "2025-01-07T08:15:31.000Z",
+            "expiration_time": "2026-01-07T08:15:31.000Z",
+            "meta_data": {},
+            "created_at": "2025-01-07T08:15:31.000Z",
+            "updated_at": "2025-01-07T08:15:31.000Z",
+            "typeInfo": {
+                "code": "FARMER",
+                "name": "农户",
+                "needCertification": true,
+                "validityDays": 365,
+                "certificationRequirements": {
+                    "requiredFields": [
+                        "idCard",
+                        "landCertificate"
+                    ],
+                    "description": "需要提供身份证和土地证明"
+                }
+            }
+        }
+    ]
+}
+```
+
+### 5.3 申请身份认证
+
+#### 请求信息
+- **接口**: `/identities/apply`
+- **方法**: `POST`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| identityType | string | 是 | 身份类型编码 | 必须是有效的身份类型 |
+| certificationData | object | 是 | 认证资料 | 必须包含该身份类型要求的所有必需字段 |
+
+#### 请求示例
+```json
+{
+    "identityType": "EXPERT",
+    "certificationData": {
+        "professionalCert": "http://example.com/path/to/idcard.jpg",
+        "workProof": "http://example.com/path/to/land.jpg"
+    }
+}
+```
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "认证申请提交成功",
+    "data": {
+        "id": 3,
+        "status": 0,
+        "message": "认证申请已提交，等待审核"
+    }
+}
+```
+
+
+
 #### 相关文章获取规则
 1. 默认返回5条记录(可通过limit参数调整,最大20条)
 2. 只返回已发布(is_published = 1)且有效(status = 1)的文章

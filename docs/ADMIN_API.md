@@ -1199,6 +1199,120 @@
 }
 ```
 
+## 6. 身份认证管理模块
+
+### 6.1 获取认证申请列表
+
+#### 请求信息
+- **接口**: `/identities/certifications`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `identity:certification:list`
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| pageSize | number | 否 | 每页条数 | 10 |
+| status | number | 否 | 状态筛选(0-待审核,1-已通过,2-已拒绝) | - |
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "data": {
+        "list": [
+            {
+                "id": 2,
+                "user_id": 3,
+                "identity_type": "FARMER",
+                "status": 0,
+                "certification_data": {
+                    "idCard": "http://example.com/path/to/idcard.jpg",
+                    "landCertificate": "http://example.com/path/to/land.jpg"
+                },
+                "review_comment": null,
+                "reviewer_id": null,
+                "review_time": null,
+                "created_at": "2025-01-07T09:28:23.000Z",
+                "updated_at": "2025-01-07T09:28:23.000Z",
+                "user_name": "lwh",
+                "reviewer_name": null
+            }
+        ],
+        "pagination": {
+            "total": 1,
+            "page": 1,
+            "pageSize": 10
+        }
+    },
+    "message": "获取成功"
+}
+```
+
+### 6.2 审核认证申请
+
+#### 请求信息
+- **接口**: `/identities/certifications/:certificationId/review`
+- **方法**: `PUT`
+- **需要认证**: 是
+- **所需权限**: `identity:certification:review`
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| certificationId | number | 认证申请ID |
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| approved | boolean | 是 | 是否通过认证 |
+| comment | string | 否 | 审核意见 |
+
+#### 请求示例
+```json
+{
+    "approved": true,  // 或 false
+    "comment": "审核通过，资料齐全"  // 审核意见
+}
+```
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "认证申请已通过",
+    "data": {
+        "success": true,
+        "message": "认证通过"
+    }
+}
+```
+
+### 6.3 获取身份统计信息
+
+#### 请求信息
+- **接口**: `/identities/stats`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `identity:stats`
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "获取身份统计信息成功",
+    "data": {
+        "total": 2,
+        "byType": {
+            "EXPERT": 1,
+            "FARMER": 1
+        },
+        "pendingReview": 0
+    }
+}
+```
+
 ## 注意事项
 
 1. 所有请求都需要携带有效的管理员 token
