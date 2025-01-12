@@ -81,9 +81,6 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// 使用日志中间件
-app.use(loggerMiddleware);
-
 // 统一响应处理
 app.use((req, res, next) => {
   res.success = (data, message) => {
@@ -123,6 +120,9 @@ app.use((req, res) => {
 
 // 错误处理中间件
 app.use(errorHandler);
+
+// 使用日志中间件
+app.use(loggerMiddleware);
 
 // 优雅关闭
 process.on('SIGTERM', () => {
