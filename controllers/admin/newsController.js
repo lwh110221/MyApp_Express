@@ -4,6 +4,11 @@ const sanitizeHtml = require('sanitize-html');
 const path = require('path');
 const fs = require('fs').promises;
 const upload = require('../../config/multer');
+const logger = require('../../utils/logger');
+const { BusinessError } = require('../../utils/errors');
+const createFileCleanupMiddleware = require('../../middleware/fileCleanup');
+
+const fileCleanup = createFileCleanupMiddleware();
 
 // 配置允许的HTML标签和属性，完全支持Quill编辑器
 const sanitizeOptions = {
@@ -442,19 +447,47 @@ class NewsController {
         try {
             const { articleId } = req.params;
 
-            await connection.beginTransaction();
-
-            // 获取文章内容以删除相关图片
+            // 获取所有需要清理的文件信息
+            // 获取文章内容和封面图片
             const [article] = await connection.query(
                 'SELECT content, cover_image FROM news_articles WHERE id = ?',
                 [articleId]
             );
 
             if (article.length === 0) {
-                await connection.rollback();
                 return ResponseUtil.error(res, '文章不存在', 404);
             }
 
+            // 提取文章内容中的所有图片URL
+            const imageUrls = new Set();
+            if (article[0].content) {
+                // 匹配所有可能的图片URL格式
+                const patterns = [
+                    /<img[^>]+src="([^"]+)"[^>]*>/g,  // 标准的img标签
+                    /<img[^>]+src='([^']+)'[^>]*>/g,   // 使用单引号的img标签
+                    /url\(['"]?([^'"]+)['"]?\)/g,      // CSS中的url()
+                ];
+
+                for (const pattern of patterns) {
+                    let match;
+                    while ((match = pattern.exec(article[0].content)) !== null) {
+                        const url = match[1];
+                        // 提取 /uploads/news/ 后面的部分
+                        const newsMatch = url.match(/\/uploads\/news\/([\w-]+\.[a-zA-Z]+)$/);
+                        if (newsMatch) {
+                            const cleanUrl = `/uploads/news/${newsMatch[1]}`;
+                            imageUrls.add(cleanUrl);
+                        }
+                    }
+                }
+            }
+
+            logger.info(`找到文章 ${articleId} 中的图片URL:`, Array.from(imageUrls));
+
+            // 开始事务
+            await connection.beginTransaction();
+
+            // 删除数据库记录
             // 删除文章
             const [result] = await connection.query(
                 'DELETE FROM news_articles WHERE id = ?',
@@ -466,39 +499,33 @@ class NewsController {
                 return ResponseUtil.error(res, '文章不存在', 404);
             }
 
-            // 删除文章内容中的图片
-            const content = article[0].content;
-            if (content) {
-                const imageRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
-                let match;
-                while ((match = imageRegex.exec(content)) !== null) {
-                    const imageUrl = match[1];
-                    if (imageUrl.startsWith('/uploads/news/')) {
-                        try {
-                            const filePath = path.join('public', imageUrl);
-                            await fs.unlink(filePath);
-                        } catch (error) {
-                            console.error('Delete content image error:', error);
-                        }
-                    }
+            // 清理文件
+            // 清理文章内容中的图片
+            for (const imageUrl of imageUrls) {
+                try {
+                    await fileCleanup.cleanupSingleFile(imageUrl);
+                    logger.info(`成功清理文章图片: ${imageUrl}`);
+                } catch (error) {
+                    logger.warn(`清理文章图片失败: ${imageUrl}`, error);
                 }
             }
 
-            // 删除封面图片
-            if (article[0].cover_image && article[0].cover_image.startsWith('/uploads/news/')) {
+            // 清理封面图片
+            if (article[0].cover_image) {
                 try {
-                    const coverPath = path.join('public', article[0].cover_image);
-                    await fs.unlink(coverPath);
+                    await fileCleanup.cleanupSingleFile(article[0].cover_image);
+                    logger.info(`成功清理封面图片: ${article[0].cover_image}`);
                 } catch (error) {
-                    console.error('Delete cover image error:', error);
+                    logger.warn(`清理封面图片失败: ${article[0].cover_image}`, error);
                 }
             }
 
             await connection.commit();
             return ResponseUtil.success(res, null, '文章删除成功');
+
         } catch (error) {
             await connection.rollback();
-            console.error('Delete article error:', error);
+            logger.error('删除文章失败:', error);
             return ResponseUtil.error(res, '删除文章失败');
         } finally {
             connection.release();
@@ -589,7 +616,7 @@ class NewsController {
                     const newImageUrl = `/uploads/news/${filename}`;
                     processedContent = processedContent.replace(imageUrl, newImageUrl);
                 } catch (error) {
-                    console.error('Process image error:', error);
+                    logger.error('处理图片失败:', error);
                 }
             }
         }
@@ -598,32 +625,10 @@ class NewsController {
 
     // 清理不再使用的图片
     async cleanupUnusedImages(oldContent, newContent) {
-        const extractImageUrls = (content) => {
-            const urls = [];
-            const regex = /<img[^>]+src="([^"]+)"[^>]*>/g;
-            let match;
-            while ((match = regex.exec(content)) !== null) {
-                if (match[1].startsWith('/uploads/news/')) {
-                    urls.push(match[1]);
-                }
-            }
-            return urls;
-        };
-
-        const oldUrls = extractImageUrls(oldContent);
-        const newUrls = extractImageUrls(newContent);
-
-        // 找出不再使用的图片URL
-        const unusedUrls = oldUrls.filter(url => !newUrls.includes(url));
-
-        // 删除不再使用的图片文件
-        for (const url of unusedUrls) {
-            try {
-                const filePath = path.join('public', url);
-                await fs.unlink(filePath);
-            } catch (error) {
-                console.error('Delete unused image error:', error);
-            }
+        try {
+            await fileCleanup.cleanupUnusedFiles(oldContent, newContent);
+        } catch (error) {
+            logger.error('清理未使用的图片失败:', error);
         }
     }
 

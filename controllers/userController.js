@@ -4,6 +4,11 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const svgCaptcha = require('svg-captcha');
+const logger = require('../utils/logger');
+const { BusinessError } = require('../utils/errors');
+const createFileCleanupMiddleware = require('../middleware/fileCleanup');
+
+const fileCleanup = createFileCleanupMiddleware();
 
 exports.register = async (req, res) => {
   try {
@@ -175,24 +180,11 @@ exports.updateAvatar = async (req, res) => {
         [avatarUrl, req.userData.userId]
       );
 
-      // 删除旧头像文件
+      // 使用文件清理中间件删除旧头像
       if (oldAvatar.length > 0 && oldAvatar[0].profile_picture) {
-        const oldAvatarPath = path.join(
-          __dirname, 
-          '../public', 
-          oldAvatar[0].profile_picture
-        );
-        
-        // 检查文件是否存在并且不是默认头像
-        if (
-          fs.existsSync(oldAvatarPath) && 
-          !oldAvatar[0].profile_picture.includes('default-avatar')
-        ) {
-          fs.unlink(oldAvatarPath, (err) => {
-            if (err) {
-              console.error('删除旧头像文件失败:', err);
-            }
-          });
+        const oldAvatarPath = oldAvatar[0].profile_picture;
+        if (!oldAvatarPath.includes('default-avatar')) {
+          await fileCleanup.cleanupSingleFile(oldAvatarPath);
         }
       }
     }
@@ -204,21 +196,10 @@ exports.updateAvatar = async (req, res) => {
   } catch (error) {
     // 如果更新失败，删除新上传的文件
     if (req.file) {
-      const newAvatarPath = path.join(
-        __dirname, 
-        '../public/uploads/avatars', 
-        req.file.filename
-      );
-      if (fs.existsSync(newAvatarPath)) {
-        fs.unlink(newAvatarPath, (err) => {
-          if (err) {
-            console.error('删除新上传的头像文件失败:', err);
-          }
-        });
-      }
+      await fileCleanup.cleanupSingleFile(`/uploads/avatars/${req.file.filename}`);
     }
 
-    console.error(error);
+    logger.error('更新头像失败:', error);
     res.status(500).json({ message: '服务器错误' });
   }
 };

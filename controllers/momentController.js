@@ -1,6 +1,10 @@
 const db = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const logger = require('../utils/logger');
+const createFileCleanupMiddleware = require('../middleware/fileCleanup');
+
+const fileCleanup = createFileCleanupMiddleware();
 
 // 发布动态
 exports.createMoment = async (req, res) => {
@@ -67,16 +71,14 @@ exports.createMoment = async (req, res) => {
   } catch (error) {
     await connection.rollback();
     
+    // 如果发布失败，清理已上传的图片
     if (req.files) {
-      req.files.forEach(file => {
-        const filePath = path.join(__dirname, '../public/uploads/moments', file.filename);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      });
+      for (const file of req.files) {
+        await fileCleanup.cleanupSingleFile(`/uploads/moments/${file.filename}`);
+      }
     }
     
-    console.error('发布动态失败:', error);
+    logger.error('发布动态失败:', error);
     return res.status(500).json({
       success: false,
       message: '发布动态失败，请重试'
@@ -127,12 +129,14 @@ exports.getMoments = async (req, res) => {
 
 // 删除动态
 exports.deleteMoment = async (req, res) => {
+  const connection = await db.getConnection();
   try {
     const { momentId } = req.params;
     const userId = req.userData.userId;
 
+    // 获取所有需要清理的文件信息
     // 检查是否是动态的所有者
-    const [moment] = await db.execute(
+    const [moment] = await connection.query(
       'SELECT * FROM user_moments WHERE id = ? AND user_id = ?',
       [momentId, userId]
     );
@@ -141,29 +145,44 @@ exports.deleteMoment = async (req, res) => {
       return res.status(403).json({ message: '无权删除此动态' });
     }
 
-    // 获取动态相关的图片
-    const [images] = await db.execute(
-      'SELECT image_url FROM moment_images WHERE moment_id = ?',
+    // 获取动态相关的所有图片
+    const [images] = await connection.query(
+      'SELECT DISTINCT image_url FROM moment_images WHERE moment_id = ?',
       [momentId]
     );
 
-    // 删除动态(级联删除会自动删除相关图片记录)
-    await db.execute(
-      'DELETE FROM user_moments WHERE id = ?',
-      [momentId]
-    );
+    // 开始事务
+    await connection.beginTransaction();
 
-    // 删除图片文件
-    images.forEach(image => {
-      const filePath = path.join(__dirname, '../public', image.image_url);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+    try {
+      // 按照依赖关系依次删除数据库记录
+      // 删除动态图片记录
+      await connection.query('DELETE FROM moment_images WHERE moment_id = ?', [momentId]);
+      
+      // 删除动态
+      const [result] = await connection.query('DELETE FROM user_moments WHERE id = ?', [momentId]);
+
+      if (result.affectedRows === 0) {
+        await connection.rollback();
+        return res.status(404).json({ message: '动态不存在' });
       }
-    });
 
-    res.json({ message: '动态已删除' });
+      // 清理文件
+      // 清理动态图片
+      for (const image of images) {
+        await fileCleanup.cleanupSingleFile(image.image_url);
+      }
+
+      await connection.commit();
+      res.json({ message: '动态已删除' });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
   } catch (error) {
-    console.error(error);
+    logger.error('删除动态失败:', error);
     res.status(500).json({ message: '服务器错误' });
+  } finally {
+    connection.release();
   }
 }; 

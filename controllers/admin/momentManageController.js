@@ -1,5 +1,9 @@
 const pool = require('../../config/database');
+const logger = require('../../utils/logger');
 const ResponseUtil = require('../../utils/responseUtil');
+const createFileCleanupMiddleware = require('../../middleware/fileCleanup');
+
+const fileCleanup = createFileCleanupMiddleware();
 
 class MomentManageController {
     // 获取动态列表
@@ -73,36 +77,42 @@ class MomentManageController {
 
     // 删除动态
     async deleteMoment(req, res) {
+        const connection = await pool.getConnection();
         try {
             const { momentId } = req.params;
 
-            // 开启事务
-            const connection = await pool.getConnection();
+            // 获取动态图片信息
+            const [images] = await connection.query(
+                'SELECT image_url FROM moment_images WHERE moment_id = ?',
+                [momentId]
+            );
+
             await connection.beginTransaction();
 
-            try {
-                // 删除动态图片
-                await connection.query('DELETE FROM moment_images WHERE moment_id = ?', [momentId]);
-                
-                // 删除动态
-                const [result] = await connection.query('DELETE FROM user_moments WHERE id = ?', [momentId]);
+            // 删除动态图片记录
+            await connection.query('DELETE FROM moment_images WHERE moment_id = ?', [momentId]);
+            
+            // 删除动态
+            const [result] = await connection.query('DELETE FROM user_moments WHERE id = ?', [momentId]);
 
-                if (result.affectedRows === 0) {
-                    await connection.rollback();
-                    return ResponseUtil.error(res, '动态不存在', 404);
-                }
-
-                await connection.commit();
-                return ResponseUtil.success(res, null, '动态删除成功');
-            } catch (error) {
+            if (result.affectedRows === 0) {
                 await connection.rollback();
-                throw error;
-            } finally {
-                connection.release();
+                return ResponseUtil.error(res, '动态不存在', 404);
             }
+
+            // 清理图片文件
+            for (const image of images) {
+                await fileCleanup.cleanupSingleFile(image.image_url);
+            }
+
+            await connection.commit();
+            return ResponseUtil.success(res, null, '动态删除成功');
         } catch (error) {
-            console.error('Delete moment error:', error);
+            await connection.rollback();
+            logger.error('删除动态失败:', error);
             return ResponseUtil.error(res, '删除动态失败');
+        } finally {
+            connection.release();
         }
     }
 

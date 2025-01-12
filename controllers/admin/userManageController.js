@@ -1,5 +1,9 @@
 const pool = require('../../config/database');
+const logger = require('../../utils/logger');
 const ResponseUtil = require('../../utils/responseUtil');
+const createFileCleanupMiddleware = require('../../middleware/fileCleanup');
+
+const fileCleanup = createFileCleanupMiddleware();
 
 class UserManageController {
     // 获取用户列表
@@ -133,20 +137,40 @@ class UserManageController {
 
     // 删除用户
     async deleteUser(req, res) {
+        const connection = await pool.getConnection();
         try {
             const { userId } = req.params;
 
-            // 开启事务
-            const connection = await pool.getConnection();
+            // 获取所有需要清理的文件信息
+            // 获取用户头像
+            const [userProfile] = await connection.query(
+                'SELECT profile_picture FROM user_profiles WHERE user_id = ?',
+                [userId]
+            );
+
+            // 获取用户的所有动态图片
+            const [momentImages] = await connection.query(
+                `SELECT DISTINCT mi.image_url 
+                FROM moment_images mi 
+                JOIN user_moments um ON mi.moment_id = um.id 
+                WHERE um.user_id = ?`,
+                [userId]
+            );
+
+            // 开始事务
             await connection.beginTransaction();
 
             try {
+                // 按照依赖关系依次删除数据库记录
+                // 删除动态相关
+                await connection.query(
+                    'DELETE FROM moment_images WHERE moment_id IN (SELECT id FROM user_moments WHERE user_id = ?)',
+                    [userId]
+                );
+                await connection.query('DELETE FROM user_moments WHERE user_id = ?', [userId]);
+                
                 // 删除用户资料
                 await connection.query('DELETE FROM user_profiles WHERE user_id = ?', [userId]);
-                
-                // 删除用户动态相关
-                await connection.query('DELETE FROM moment_images WHERE moment_id IN (SELECT id FROM user_moments WHERE user_id = ?)', [userId]);
-                await connection.query('DELETE FROM user_moments WHERE user_id = ?', [userId]);
                 
                 // 删除用户账号
                 const [result] = await connection.query('DELETE FROM users WHERE id = ?', [userId]);
@@ -156,17 +180,31 @@ class UserManageController {
                     return ResponseUtil.error(res, '用户不存在', 404);
                 }
 
+                // 清理文件
+                // 清理用户头像
+                if (userProfile.length > 0 && userProfile[0].profile_picture) {
+                    const avatarPath = userProfile[0].profile_picture;
+                    if (!avatarPath.includes('default-avatar')) {
+                        await fileCleanup.cleanupSingleFile(avatarPath);
+                    }
+                }
+
+                // 清理用户的所有动态图片
+                for (const image of momentImages) {
+                    await fileCleanup.cleanupSingleFile(image.image_url);
+                }
+
                 await connection.commit();
                 return ResponseUtil.success(res, null, '用户删除成功');
             } catch (error) {
                 await connection.rollback();
                 throw error;
-            } finally {
-                connection.release();
             }
         } catch (error) {
-            console.error('Delete user error:', error);
+            logger.error('删除用户失败:', error);
             return ResponseUtil.error(res, '删除用户失败');
+        } finally {
+            connection.release();
         }
     }
 
