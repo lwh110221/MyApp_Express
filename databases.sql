@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 
 -- 初始化超级管理员角色
 INSERT INTO roles (name, code, description) VALUES 
-('超级管理员', 'super_admin', '系统超级管理员，拥有所有权限');
+('超级管理员', 'super_admin', '系统超级管理员，拥有所有权限'),
 ('管理员', 'admin', '系统管理员，拥有部分权限');
 
 -- 初始化基础权限
