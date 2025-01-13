@@ -6,7 +6,7 @@ exports.generateCaptcha = (req, res) => {
     size: 4, // 验证码长度
     noise: 2, // 干扰线条数
     color: true, // 验证码字符颜色
-    background: '#f0f0f0' // 背景色
+    background: '#cee8ff' // 背景色
   });
   
   // 将验证码存入 session
