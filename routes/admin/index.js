@@ -26,7 +26,7 @@ router.use('/moments', momentManageRoutes);
 router.use('/news', newsRoutes);
 router.use('/logs', logManageRoutes);
 router.use('/community', communityManageRoutes);
-router.use('/community', tagManageRoutes);
+router.use('/community/tags', tagManageRoutes);
 
 // 注册身份管理路由
 router.use('/identities', identityManageRoutes);

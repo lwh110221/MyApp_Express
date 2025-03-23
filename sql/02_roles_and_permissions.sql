@@ -34,6 +34,14 @@ INSERT INTO permissions (name, code, description) VALUES
 ('身份统计信息', 'identity:stats', '查看身份认证统计信息'),
 ('身份类型管理', 'identity:type:manage', '管理身份类型配置');
 
+-- 社区相关权限
+INSERT INTO permissions (name, code, description) VALUES 
+('社区帖子管理', 'community:post:manage', '管理社区帖子（审核、删除等）'),
+('社区评论管理', 'community:comment:manage', '管理社区评论（审核、删除等）'),
+('社区标签管理', 'community:tag:manage', '管理社区标签（增删改查）'),
+('社区用户关系管理', 'user:relation:manage', '管理用户关注关系'),
+('用户积分管理', 'user:points:manage', '管理用户积分记录');
+
 -- 为超级管理员角色分配所有权限
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 1, id FROM permissions;

@@ -126,6 +126,7 @@ app.use('/api/help', helpRoutes);
 app.use('/api/community', communityRoutes);
 
 // 管理员 API 路由
+app.use('/api/admin', adminRoutes);
 app.use('/api/admin/help', helpManageRoutes);
 app.use('/api/admin/community', communityManageRoutes);
 
