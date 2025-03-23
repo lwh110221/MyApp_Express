@@ -194,6 +194,182 @@ class CommunityManageController extends BaseController {
             this.error(res, '更新状态失败');
         }
     }
+
+    // 获取点赞记录列表
+    async getLikesList(req, res) {
+        try {
+            const { page = 1, limit = 10, type, userId, targetId } = req.query;
+            const offset = (page - 1) * limit;
+
+            let table = 'community_post_likes';
+            let joinField = 'post_id';
+            let targetTable = 'community_posts';
+            let targetField = 'title';
+
+            if (type === 'comment') {
+                table = 'community_comment_likes';
+                joinField = 'comment_id';
+                targetTable = 'community_comments';
+                targetField = 'content';
+            }
+
+            let whereClause = 'WHERE 1=1';
+            const params = [];
+
+            if (userId) {
+                whereClause += ' AND l.user_id = ?';
+                params.push(userId);
+            }
+
+            if (targetId) {
+                whereClause += ` AND l.${joinField} = ?`;
+                params.push(targetId);
+            }
+
+            // 获取总数
+            const [countResult] = await pool.query(
+                `SELECT COUNT(*) as total 
+                FROM ${table} l 
+                ${whereClause}`,
+                params
+            );
+            const total = countResult[0].total;
+
+            // 获取点赞列表
+            const [likes] = await pool.query(
+                `SELECT 
+                    l.*,
+                    u.username as username,
+                    t.${targetField} as target_content
+                FROM ${table} l
+                LEFT JOIN users u ON l.user_id = u.id
+                LEFT JOIN ${targetTable} t ON l.${joinField} = t.id
+                ${whereClause}
+                ORDER BY l.created_at DESC
+                LIMIT ? OFFSET ?`,
+                [...params, parseInt(limit), offset]
+            );
+
+            this.success(res, {
+                items: likes,
+                pagination: {
+                    total,
+                    page: parseInt(page),
+                    limit: parseInt(limit)
+                }
+            });
+        } catch (error) {
+            logger.error('获取点赞记录列表错误:', error);
+            this.error(res, '获取点赞记录失败');
+        }
+    }
+
+    // 获取关注关系列表
+    async getFollowsList(req, res) {
+        try {
+            const { page = 1, limit = 10, userId } = req.query;
+            const offset = (page - 1) * limit;
+
+            let whereClause = 'WHERE 1=1';
+            const params = [];
+
+            if (userId) {
+                whereClause += ' AND (f.follower_id = ? OR f.followed_id = ?)';
+                params.push(userId, userId);
+            }
+
+            // 获取总数
+            const [countResult] = await pool.query(
+                `SELECT COUNT(*) as total 
+                FROM user_follows f 
+                ${whereClause}`,
+                params
+            );
+            const total = countResult[0].total;
+
+            // 获取关注列表
+            const [follows] = await pool.query(
+                `SELECT 
+                    f.*,
+                    u1.username as follower_username,
+                    u2.username as followed_username
+                FROM user_follows f
+                LEFT JOIN users u1 ON f.follower_id = u1.id
+                LEFT JOIN users u2 ON f.followed_id = u2.id
+                ${whereClause}
+                ORDER BY f.created_at DESC
+                LIMIT ? OFFSET ?`,
+                [...params, parseInt(limit), offset]
+            );
+
+            this.success(res, {
+                items: follows,
+                pagination: {
+                    total,
+                    page: parseInt(page),
+                    limit: parseInt(limit)
+                }
+            });
+        } catch (error) {
+            logger.error('获取关注关系列表错误:', error);
+            this.error(res, '获取关注关系失败');
+        }
+    }
+
+    // 获取用户积分记录
+    async getPointsRecords(req, res) {
+        try {
+            const { page = 1, limit = 10, userId, type } = req.query;
+            const offset = (page - 1) * limit;
+
+            let whereClause = 'WHERE 1=1';
+            const params = [];
+
+            if (userId) {
+                whereClause += ' AND p.user_id = ?';
+                params.push(userId);
+            }
+
+            if (type) {
+                whereClause += ' AND p.type = ?';
+                params.push(type);
+            }
+
+            // 获取总数
+            const [countResult] = await pool.query(
+                `SELECT COUNT(*) as total 
+                FROM user_points_records p 
+                ${whereClause}`,
+                params
+            );
+            const total = countResult[0].total;
+
+            // 获取积分记录
+            const [records] = await pool.query(
+                `SELECT 
+                    p.*,
+                    u.username
+                FROM user_points_records p
+                LEFT JOIN users u ON p.user_id = u.id
+                ${whereClause}
+                ORDER BY p.created_at DESC
+                LIMIT ? OFFSET ?`,
+                [...params, parseInt(limit), offset]
+            );
+
+            this.success(res, {
+                items: records,
+                pagination: {
+                    total,
+                    page: parseInt(page),
+                    limit: parseInt(limit)
+                }
+            });
+        } catch (error) {
+            logger.error('获取用户积分记录错误:', error);
+            this.error(res, '获取积分记录失败');
+        }
+    }
 }
 
 module.exports = new CommunityManageController(); 

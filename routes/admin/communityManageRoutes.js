@@ -46,4 +46,37 @@ router.put('/comments/:commentId/status',
     communityManageController.updateCommentStatus
 );
 
+// 获取点赞记录
+router.get('/likes',
+    auth,
+    checkPermission('community:like:manage'),
+    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
+    query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('每页数量必须在1-50之间'),
+    query('type').optional().isIn(['post', 'comment']).withMessage('类型必须是post或comment'),
+    validate([]),
+    communityManageController.getLikesList
+);
+
+// 获取关注关系列表
+router.get('/follows',
+    auth,
+    checkPermission('user:relation:manage'),
+    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
+    query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('每页数量必须在1-50之间'),
+    query('userId').optional().isInt().withMessage('用户ID必须是整数'),
+    validate([]),
+    communityManageController.getFollowsList
+);
+
+// 获取用户积分记录
+router.get('/points',
+    auth,
+    checkPermission('user:points:manage'),
+    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
+    query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('每页数量必须在1-50之间'),
+    query('userId').optional().isInt().withMessage('用户ID必须是整数'),
+    validate([]),
+    communityManageController.getPointsRecords
+);
+
 module.exports = router; 

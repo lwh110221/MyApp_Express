@@ -1313,6 +1313,359 @@
 }
 ```
 
+## 7. 社区管理模块
+
+### 7.1 获取帖子列表
+
+#### 请求信息
+- **接口**: `/community/posts`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `community:post:manage`
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| status | number | 否 | 状态筛选 | - |
+| keyword | string | 否 | 搜索关键词 | - |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 2,
+        "user_id": 2,
+        "title": "测试帖子",
+        "content": "这是一个测试帖子",
+        "images": [],
+        "tags": [],
+        "status": 1,
+        "view_count": 2,
+        "like_count": 0,
+        "comment_count": 0,
+        "created_at": "2025-03-23T14:58:59.000Z",
+        "updated_at": "2025-03-23T14:59:33.000Z",
+        "author_name": "test"
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### 7.2 更新帖子状态
+
+#### 请求信息
+- **接口**: `/community/posts/:postId/status`
+- **方法**: `PUT`
+- **需要认证**: 是
+- **所需权限**: `community:post:manage`
+- **Content-Type**: `application/json`
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 帖子ID |
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| status | number | 是 | 状态值(0-隐藏, 1-显示) |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "状态更新成功"
+}
+```
+
+### 7.3 获取评论列表
+
+#### 请求信息
+- **接口**: `/community/comments`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `community:comment:manage`
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| status | number | 否 | 状态筛选 | - |
+| postId | number | 否 | 帖子ID | - |
+| keyword | string | 否 | 搜索关键词 | - |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 2,
+        "post_id": 2,
+        "user_id": 2,
+        "content": "这是一条测试评论",
+        "images": [],
+        "status": 1,
+        "like_count": 0,
+        "created_at": "2025-03-23T15:02:44.000Z",
+        "updated_at": "2025-03-23T15:02:44.000Z",
+        "author_name": "test",
+        "post_title": "测试帖子"
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### 7.4 更新评论状态
+
+#### 请求信息
+- **接口**: `/community/comments/:commentId/status`
+- **方法**: `PUT`
+- **需要认证**: 是
+- **所需权限**: `community:comment:manage`
+- **Content-Type**: `application/json`
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| commentId | number | 评论ID |
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| status | number | 是 | 状态值(0-隐藏, 1-显示) |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "状态更新成功"
+}
+```
+
+### 7.5 获取点赞记录列表
+
+#### 请求信息
+- **接口**: `/community/likes`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `community:like:manage`
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| type | string | 否 | 类型：post(帖子)、comment(评论) | - |
+| userId | number | 否 | 用户ID | - |
+| targetId | number | 否 | 目标ID(帖子ID或评论ID) | - |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "user_id": 3,
+        "post_id": 2,
+        "created_at": "2025-03-23T14:59:06.000Z",
+        "username": "test333",
+        "target_content": "测试帖子"
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### 7.6 获取关注关系列表
+
+#### 请求信息
+- **接口**: `/community/follows`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `user:relation:manage`
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| userId | number | 否 | 用户ID(查询该用户的关注和粉丝) | - |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "follower_id": 2,
+        "followed_id": 3,
+        "created_at": "2025-03-23T14:57:40.000Z",
+        "follower_username": "test",
+        "followed_username": "test333"
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### 7.7 获取用户积分记录
+
+#### 请求信息
+- **接口**: `/community/points`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `user:points:manage`
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| userId | number | 否 | 用户ID | - |
+| type | string | 否 | 积分类型(post_create, post_like, comment_create, comment_like等) | - |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "user_id": 2,
+        "points": 10,
+        "type": "post_create",
+        "related_id": 2,
+        "description": "发布社区帖子（ID: 2）",
+        "created_at": "2025-03-23T14:58:59.000Z",
+        "username": "test"
+      },
+      {
+        "id": 2,
+        "user_id": 2,
+        "points": 2,
+        "type": "post_like",
+        "related_id": 2,
+        "description": "帖子获得点赞（ID: 2）",
+        "created_at": "2025-03-23T14:59:06.000Z",
+        "username": "test"
+      }
+    ],
+    "pagination": {
+      "total": 2,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### 7.8 社区统计数据
+
+#### 请求信息
+- **接口**: `/community/stats`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `community:stats`
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "total_posts": 2,
+    "active_posts": 2,
+    "total_comments": 2,
+    "active_comments": 2,
+    "total_likes": 3,
+    "today_new_posts": 2,
+    "today_new_comments": 2,
+    "top_users": [
+      {
+        "user_id": 2,
+        "username": "test",
+        "post_count": 1,
+        "comment_count": 1,
+        "like_received": 2
+      },
+      {
+        "user_id": 3,
+        "username": "test333",
+        "post_count": 0,
+        "comment_count": 0,
+        "like_received": 0
+      }
+    ],
+    "trend": {
+      "posts": [
+        {
+          "date": "2025-03-22",
+          "count": 0
+        },
+        {
+          "date": "2025-03-23",
+          "count": 2
+        }
+      ],
+      "comments": [
+        {
+          "date": "2025-03-22",
+          "count": 0
+        },
+        {
+          "date": "2025-03-23",
+          "count": 2
+        }
+      ],
+      "likes": [
+        {
+          "date": "2025-03-22",
+          "count": 0
+        },
+        {
+          "date": "2025-03-23",
+          "count": 3
+        }
+      ]
+    }
+  }
+}
+```
+
 ## 注意事项
 
 1. 所有请求都需要携带有效的管理员 token
