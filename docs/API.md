@@ -272,6 +272,216 @@
 }
 ```
 
+### 1.8 获取用户积分记录
+
+#### 请求信息
+- **接口**: `/users/points/records`
+- **方法**: `GET`
+- **需要认证**: 是
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|--------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "items": [
+      {
+        "id": 5,
+        "user_id": 3,
+        "points": 10,
+        "type": "post_create",
+        "related_id": 15,
+        "description": "发布社区帖子（ID: 15）",
+        "created_at": "2025-01-10T14:25:30.000Z"
+      },
+      {
+        "id": 4,
+        "user_id": 3,
+        "points": 2,
+        "type": "post_like",
+        "related_id": 12,
+        "description": "帖子获得点赞（ID: 12）",
+        "created_at": "2025-01-10T14:20:15.000Z"
+      }
+    ],
+    "pagination": {
+      "total": 5,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### 1.9 获取用户主页资料
+
+#### 请求信息
+- **接口**: `/users/:userId/profile`
+- **方法**: `GET`
+- **需要认证**: 否 (提供token可获取是否已关注该用户)
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| userId | number | 用户ID |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "id": 3,
+    "username": "张三",
+    "profile_picture": "/uploads/avatars/avatar-123.jpg",
+    "bio": "热爱农业的普通用户",
+    "created_at": "2025-01-01T10:00:00.000Z",
+    "post_count": 15,
+    "follower_count": 5,
+    "following_count": 10,
+    "is_followed": false,
+    "identity_types": ["FARMER"],
+    "points": 325
+  }
+}
+```
+
+### 1.10 关注用户
+
+#### 请求信息
+- **接口**: `/users/:userId/follow`
+- **方法**: `POST`
+- **需要认证**: 是
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| userId | number | 用户ID |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "关注成功"
+}
+```
+
+#### 错误响应
+```json
+{
+  "code": 400,
+  "message": "已经关注过该用户"
+}
+```
+
+### 1.11 取消关注用户
+
+#### 请求信息
+- **接口**: `/users/:userId/unfollow`
+- **方法**: `POST`
+- **需要认证**: 是
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| userId | number | 用户ID |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "取消关注成功"
+}
+```
+
+### 1.12 获取用户关注列表
+
+#### 请求信息
+- **接口**: `/users/:userId/following`
+- **方法**: `GET`
+- **需要认证**: 否 (提供token可获取是否已关注列表中的用户)
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| userId | number | 用户ID |
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|--------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 20 |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 5,
+        "username": "李四",
+        "profile_picture": "/uploads/avatars/avatar-456.jpg",
+        "bio": "专注水稻种植技术研究10年",
+        "is_followed": true
+      }
+    ],
+    "pagination": {
+      "total": 10,
+      "page": 1,
+      "limit": 20
+    }
+  }
+}
+```
+
+### 1.13 获取用户粉丝列表
+
+#### 请求信息
+- **接口**: `/users/:userId/followers`
+- **方法**: `GET`
+- **需要认证**: 否 (提供token可获取是否已关注列表中的用户)
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| userId | number | 用户ID |
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|--------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 20 |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 8,
+        "username": "王五",
+        "profile_picture": "/uploads/avatars/avatar-789.jpg",
+        "bio": "对农业充满热情的新手",
+        "is_followed": false
+      }
+    ],
+    "pagination": {
+      "total": 5,
+      "page": 1,
+      "limit": 20
+    }
+  }
+}
+```
+
 ## 2. 动态模块
 
 ### 2.1 发布动态
@@ -1151,5 +1361,342 @@ GET /moments/user/:userId?page=1&limit=10
             "filename": "image-1234567890.jpg"
         }
     ]
+}
+```
+
+## 7. 社区模块
+
+### 7.1 发布帖子
+
+#### 请求信息
+- **接口**: `/community/posts`
+- **方法**: `POST`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| title | string | 是 | 标题 | 长度：5-100字符 |
+| content | string | 是 | 内容 | 长度：10-5000字符 |
+| tags | array | 否 | 标签数组 | 最多5个标签 |
+
+#### 请求示例
+```json
+{
+  "title": "分享一个种植技巧",
+  "content": "这是我多年种植经验的总结...",
+  "tags": ["种植技巧", "经验分享"]
+}
+```
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "发布成功",
+  "data": {
+    "id": 1,
+    "title": "分享一个种植技巧",
+    "content": "这是我多年种植经验的总结...",
+    "tags": ["种植技巧", "经验分享"],
+    "user_id": 3,
+    "username": "用户名",
+    "created_at": "2025-01-10T12:30:45.000Z"
+  }
+}
+```
+
+### 7.2 获取帖子列表
+
+#### 请求信息
+- **接口**: `/community/posts`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| tag | string | 否 | 按标签筛选 | - |
+| sort | string | 否 | 排序方式(latest/popular) | latest |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "title": "分享一个种植技巧",
+        "content_preview": "这是我多年种植经验的总结...",
+        "tags": ["种植技巧", "经验分享"],
+        "user_id": 3,
+        "username": "用户名",
+        "created_at": "2025-01-10T12:30:45.000Z",
+        "view_count": 10,
+        "like_count": 5,
+        "comment_count": 3
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### 7.3 获取帖子详情
+
+#### 请求信息
+- **接口**: `/community/posts/:postId`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 帖子ID |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "id": 1,
+    "title": "分享一个种植技巧",
+    "content": "这是我多年种植经验的总结...",
+    "tags": ["种植技巧", "经验分享"],
+    "user_id": 3,
+    "username": "用户名",
+    "profile_picture": "/uploads/avatars/default-avatar.jpg",
+    "created_at": "2025-01-10T12:30:45.000Z",
+    "updated_at": "2025-01-10T12:30:45.000Z",
+    "view_count": 11,
+    "like_count": 5,
+    "comment_count": 3,
+    "is_liked": false
+  }
+}
+```
+
+### 7.4 删除帖子
+
+#### 请求信息
+- **接口**: `/community/posts/:postId`
+- **方法**: `DELETE`
+- **需要认证**: 是
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 帖子ID |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "删除成功"
+}
+```
+
+### 7.5 发表评论
+
+#### 请求信息
+- **接口**: `/community/comments`
+- **方法**: `POST`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| post_id | number | 是 | 帖子ID | 大于0的整数 |
+| content | string | 是 | 评论内容 | 长度：1-500字符 |
+
+#### 请求示例
+```json
+{
+  "post_id": 1,
+  "content": "非常实用的技巧，感谢分享！"
+}
+```
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "评论成功",
+  "data": {
+    "id": 1,
+    "post_id": 1,
+    "content": "非常实用的技巧，感谢分享！",
+    "user_id": 3,
+    "username": "用户名",
+    "profile_picture": "/uploads/avatars/default-avatar.jpg",
+    "created_at": "2025-01-10T13:45:30.000Z"
+  }
+}
+```
+
+### 7.6 获取评论列表
+
+#### 请求信息
+- **接口**: `/community/comments`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| post_id | number | 是 | 帖子ID | - |
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 20 |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "post_id": 1,
+        "content": "非常实用的技巧，感谢分享！",
+        "user_id": 3,
+        "username": "用户名",
+        "profile_picture": "/uploads/avatars/default-avatar.jpg",
+        "created_at": "2025-01-10T13:45:30.000Z",
+        "like_count": 2,
+        "is_liked": false
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 20
+    }
+  }
+}
+```
+
+### 7.7 删除评论
+
+#### 请求信息
+- **接口**: `/community/comments/:commentId`
+- **方法**: `DELETE`
+- **需要认证**: 是
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| commentId | number | 评论ID |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "message": "删除成功"
+}
+```
+
+### 7.8 点赞/取消点赞帖子
+
+#### 请求信息
+- **接口**: `/community/posts/:postId/like`
+- **方法**: `POST`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 帖子ID |
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| action | string | 是 | 操作类型：like(点赞)、unlike(取消点赞) |
+
+#### 请求示例
+```json
+{
+  "action": "like"
+}
+```
+
+#### 响应示例（点赞）
+```json
+{
+  "code": 200,
+  "message": "点赞成功",
+  "data": {
+    "liked": true
+  }
+}
+```
+
+#### 响应示例（取消点赞）
+```json
+{
+  "code": 200,
+  "message": "取消点赞成功",
+  "data": {
+    "liked": false
+  }
+}
+```
+
+### 7.10 点赞/取消点赞评论
+
+#### 请求信息
+- **接口**: `/community/comments/:commentId/like`
+- **方法**: `POST`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| commentId | number | 评论ID |
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| action | string | 是 | 操作类型：like(点赞)、unlike(取消点赞) |
+
+#### 请求示例
+```json
+{
+  "action": "like"
+}
+```
+
+#### 响应示例（点赞）
+```json
+{
+  "code": 200,
+  "message": "点赞成功",
+  "data": {
+    "liked": true
+  }
+}
+```
+
+#### 响应示例（取消点赞）
+```json
+{
+  "code": 200,
+  "message": "取消点赞成功",
+  "data": {
+    "liked": false
+  }
 }
 ```

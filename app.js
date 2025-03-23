@@ -18,6 +18,8 @@ const identityRoutes = require('./routes/identityRoutes');
 const loggerMiddleware = require('./middleware/loggerMiddleware');
 const helpRoutes = require('./routes/helpRoutes');
 const helpManageRoutes = require('./routes/admin/helpManageRoutes');
+const communityRoutes = require('./routes/communityRoutes');
+const communityManageRoutes = require('./routes/admin/communityManageRoutes');
 const startFileCleanupTask = require('./tasks/fileCleanupTask');
 
 const app = express();
@@ -116,13 +118,16 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
 
 // API 路由
 app.use('/api/users', userRoutes);
-app.use('/api/moments', momentRoutes);
 app.use('/api/captcha', captchaRoutes);
-app.use('/api/admin', adminRoutes);
 app.use('/api/news', newsRoutes);
-app.use('/api/identities', identityRoutes);
+app.use('/api/identity', identityRoutes);
+app.use('/api/moments', momentRoutes);
 app.use('/api/help', helpRoutes);
+app.use('/api/community', communityRoutes);
+
+// 管理员 API 路由
 app.use('/api/admin/help', helpManageRoutes);
+app.use('/api/admin/community', communityManageRoutes);
 
 // 404 处理
 app.use((req, res) => {

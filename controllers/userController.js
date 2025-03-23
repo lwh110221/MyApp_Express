@@ -7,6 +7,8 @@ const svgCaptcha = require('svg-captcha');
 const logger = require('../utils/logger');
 const { BusinessError } = require('../utils/errors');
 const createFileCleanupMiddleware = require('../middleware/fileCleanup');
+const PointService = require('../services/pointService');
+const FollowService = require('../services/followService');
 
 const fileCleanup = createFileCleanupMiddleware();
 
@@ -253,10 +255,235 @@ exports.getPoints = async (req, res) => {
       return res.status(404).json({ message: '用户不存在' });
     }
 
-    res.json({ points: users[0].points });
+    res.json({
+      points: users[0].points
+    });
   } catch (error) {
-    console.error(error);
+    logger.error('获取用户积分失败:', error);
     res.status(500).json({ message: '服务器错误' });
+  }
+};
+
+// 新增：获取用户积分记录
+exports.getPointRecords = async (req, res) => {
+  try {
+    const userId = req.userData.userId;
+    const { page = 1, limit = 10 } = req.query;
+    
+    const records = await PointService.getUserPointRecords(userId, page, limit);
+    
+    res.json({
+      code: 200,
+      message: '获取成功',
+      data: records
+    });
+  } catch (error) {
+    logger.error('获取用户积分记录失败:', error);
+    res.status(500).json({ 
+      code: 500,
+      message: '服务器错误' 
+    });
+  }
+};
+
+// 新增：获取用户资料（包括关注统计）
+exports.getUserProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.userData ? req.userData.userId : null;
+    
+    // 获取用户基本信息
+    const [users] = await pool.query(
+      `SELECT u.id, u.username, u.created_at, u.points,
+              up.bio, up.profile_picture
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.status = 1`,
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ 
+        code: 404,
+        message: '用户不存在' 
+      });
+    }
+
+    const user = users[0];
+    
+    // 获取关注统计
+    const followStats = await FollowService.getUserFollowStats(userId);
+    
+    // 获取用户发帖数
+    const [postStats] = await pool.query(
+      'SELECT COUNT(*) as count FROM community_posts WHERE user_id = ? AND status = 1',
+      [userId]
+    );
+    
+    // 检查当前用户是否已关注该用户
+    let isFollowed = false;
+    if (currentUserId && currentUserId != userId) {
+      isFollowed = await FollowService.checkIsFollowed(currentUserId, userId);
+    }
+    
+    // 获取用户身份
+    const [identities] = await pool.query(
+      `SELECT identity_type FROM user_identities 
+       WHERE user_id = ? AND status = 1 
+       AND (expiration_time IS NULL OR expiration_time > NOW())`,
+      [userId]
+    );
+    
+    const identityTypes = identities.map(i => i.identity_type);
+    
+    res.json({
+      code: 200,
+      data: {
+        id: user.id,
+        username: user.username,
+        profile_picture: user.profile_picture || '/uploads/avatars/default-avatar.jpg',
+        bio: user.bio || '',
+        created_at: user.created_at,
+        post_count: postStats[0].count,
+        follower_count: followStats.follower_count,
+        following_count: followStats.following_count,
+        is_followed: isFollowed,
+        identity_types: identityTypes,
+        points: user.points
+      }
+    });
+  } catch (error) {
+    logger.error('获取用户资料失败:', error);
+    res.status(500).json({ 
+      code: 500,
+      message: '服务器错误' 
+    });
+  }
+};
+
+// 新增：关注用户
+exports.followUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const followerId = req.userData.userId;
+    
+    const result = await FollowService.followUser(followerId, userId);
+    
+    res.json({
+      code: 200,
+      message: '关注成功'
+    });
+  } catch (error) {
+    if (error instanceof BusinessError) {
+      return res.status(400).json({ 
+        code: 400,
+        message: error.message 
+      });
+    }
+    
+    logger.error('关注用户失败:', error);
+    res.status(500).json({ 
+      code: 500,
+      message: '服务器错误' 
+    });
+  }
+};
+
+// 新增：取消关注用户
+exports.unfollowUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const followerId = req.userData.userId;
+    
+    const result = await FollowService.unfollowUser(followerId, userId);
+    
+    res.json({
+      code: 200,
+      message: '取消关注成功'
+    });
+  } catch (error) {
+    if (error instanceof BusinessError) {
+      return res.status(400).json({ 
+        code: 400,
+        message: error.message 
+      });
+    }
+    
+    logger.error('取消关注用户失败:', error);
+    res.status(500).json({ 
+      code: 500,
+      message: '服务器错误' 
+    });
+  }
+};
+
+// 新增：获取用户关注列表
+exports.getFollowingList = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+    const currentUserId = req.userData ? req.userData.userId : null;
+    
+    // 检查用户是否存在
+    const [users] = await pool.query(
+      'SELECT id FROM users WHERE id = ? AND status = 1',
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ 
+        code: 404,
+        message: '用户不存在' 
+      });
+    }
+    
+    const followList = await FollowService.getFollowingList(userId, currentUserId, page, limit);
+    
+    res.json({
+      code: 200,
+      data: followList
+    });
+  } catch (error) {
+    logger.error('获取用户关注列表失败:', error);
+    res.status(500).json({ 
+      code: 500,
+      message: '服务器错误' 
+    });
+  }
+};
+
+// 新增：获取用户粉丝列表
+exports.getFollowersList = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+    const currentUserId = req.userData ? req.userData.userId : null;
+    
+    // 检查用户是否存在
+    const [users] = await pool.query(
+      'SELECT id FROM users WHERE id = ? AND status = 1',
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ 
+        code: 404,
+        message: '用户不存在' 
+      });
+    }
+    
+    const followerList = await FollowService.getFollowersList(userId, currentUserId, page, limit);
+    
+    res.json({
+      code: 200,
+      data: followerList
+    });
+  } catch (error) {
+    logger.error('获取用户粉丝列表失败:', error);
+    res.status(500).json({ 
+      code: 500,
+      message: '服务器错误' 
+    });
   }
 };
 
