@@ -1,5 +1,4 @@
--- 项目mysql初步设计数据库
--- 创建用户表
+-- 用户表
 CREATE TABLE `users` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '用户唯一标识，自增长主键',
     `username` VARCHAR(255) UNIQUE NOT NULL COMMENT '用户名，具有唯一性，不能为空',
@@ -12,7 +11,7 @@ CREATE TABLE `users` (
     INDEX `idx_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 创建用户资料表
+-- 用户资料表
 CREATE TABLE `user_profiles` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '用户资料唯一标识，自增长主键',
     `user_id` BIGINT COMMENT '关联的用户标识，用于和用户表进行关联',
@@ -22,7 +21,7 @@ CREATE TABLE `user_profiles` (
     INDEX `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 创建用户动态表
+-- 用户动态表
 CREATE TABLE `user_moments` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '动态唯一标识',
     `user_id` BIGINT NOT NULL COMMENT '发布动态的用户ID',
@@ -33,7 +32,7 @@ CREATE TABLE `user_moments` (
     INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 创建动态图片表(支持一条动态多张图片)
+-- 动态图片表
 CREATE TABLE `moment_images` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '图片唯一标识',
     `moment_id` BIGINT NOT NULL COMMENT '关联的动态ID',
@@ -43,7 +42,7 @@ CREATE TABLE `moment_images` (
     INDEX `idx_moment_id` (`moment_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 创建管理员表
+-- 管理员表
 CREATE TABLE `admins` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '管理员唯一标识',
     `username` VARCHAR(255) UNIQUE NOT NULL COMMENT '管理员用户名',
@@ -103,41 +102,7 @@ CREATE TABLE IF NOT EXISTS role_permissions (
     FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色权限关联表';
 
--- 初始化超级管理员角色
-INSERT INTO roles (name, code, description) VALUES 
-('超级管理员', 'super_admin', '系统超级管理员，拥有所有权限'),
-('管理员', 'admin', '系统管理员，拥有部分权限');
-
--- 初始化基础权限
-INSERT INTO permissions (name, code, description) VALUES 
-('管理员列表', 'admin:list', '查看管理员列表'),
-('创建管理员', 'admin:create', '创建新管理员'),
-('更新管理员', 'admin:update', '更新管理员信息'),
-('删除管理员', 'admin:delete', '删除管理员'),
-('用户列表', 'user:list', '查看用户列表'),
-('用户详情', 'user:detail', '查看用户详情'),
-('更新用户', 'user:update', '更新用户信息'),
-('删除用户', 'user:delete', '删除用户'),
-('用户统计', 'user:stats', '查看用户统计数据'),
-('动态列表', 'moment:list', '查看动态列表'),
-('删除动态', 'moment:delete', '删除动态'),
-('动态统计', 'moment:stats', '查看动态统计'),
-('日志列表', 'log:list', '查看操作日志'),
-('日志统计', 'log:stats', '查看日志统计'),
-('管理日志', 'log:clean', '清理历史日志');
-
--- 为超级管理员角色分配所有权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT 1, id FROM permissions;
-
--- 创建超级管理员账号
-INSERT INTO admins (username, password, email, status) VALUES 
-('lwhadmin', '$2a$10$UOFsUssH5GwPGL1zUeUTCe8wIGTbn4nQ0Ups7Jxd/tnK2djeDIDMa', 'lwhadmin@admin.com', 1);
-
--- 为超级管理员账号分配超级管理员角色
-INSERT INTO admin_roles (admin_id, role_id) VALUES (1, 1);
-
--- 创建操作日志表
+-- 管理员操作日志表
 CREATE TABLE `admin_operation_logs` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '日志ID',
     `admin_id` BIGINT NOT NULL COMMENT '管理员ID',
@@ -153,15 +118,7 @@ CREATE TABLE `admin_operation_logs` (
     INDEX `idx_admin_operation_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员操作日志表';
 
--- 插入测试用户数据
-INSERT INTO users (username, password, email, points, status) VALUES
-('testuser1', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'test1@example.com', 100, 1);
-
--- 插入用户资料
-INSERT INTO user_profiles (user_id, bio) VALUES
-(1, '这是测试用户1的简介');
-
--- 创建新闻分类表
+-- 新闻分类表
 CREATE TABLE `news_categories` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '分类ID',
     `name` VARCHAR(50) NOT NULL COMMENT '分类名称',
@@ -174,7 +131,7 @@ CREATE TABLE `news_categories` (
     INDEX `idx_sort` (`sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='新闻分类表';
 
--- 创建新闻文章表
+-- 新闻文章表
 CREATE TABLE `news_articles` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '文章ID',
     `category_id` BIGINT NOT NULL COMMENT '分类ID',
@@ -202,23 +159,6 @@ CREATE TABLE `news_articles` (
     INDEX `idx_publish_time` (`publish_time`),
     INDEX `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='新闻文章表';
-
--- 添加新闻管理相关权限
-INSERT INTO permissions (name, code, description) VALUES 
-('新闻分类管理', 'news:category:manage', '管理新闻分类（增删改查）'),
-('新闻文章管理', 'news:article:manage', '管理新闻文章（增删改查）'),
-('新闻发布管理', 'news:publish', '发布或下线新闻文章');
-
--- 为超级管理员角色分配新闻管理权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT 1, id FROM permissions WHERE code LIKE 'news:%';
-
--- 初始化默认新闻分类
-INSERT INTO news_categories (name, code, sort_order) VALUES 
-('最新资讯', 'latest', 1),
-('热点资讯', 'hot', 2),
-('政策资讯', 'policy', 3),
-('每周周刊', 'weekly', 4);
 
 -- 用户身份表
 CREATE TABLE IF NOT EXISTS user_identities (
@@ -251,24 +191,4 @@ CREATE TABLE IF NOT EXISTS identity_certifications (
   INDEX `idx_user_status` (`user_id`, `status`),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (reviewer_id) REFERENCES admins(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='身份认证记录表';
-
--- 添加身份认证相关权限
-INSERT INTO permissions (name, code, description) VALUES 
-('身份认证列表', 'identity:certification:list', '查看身份认证申请列表'),
-('身份认证审核', 'identity:certification:review', '审核身份认证申请'),
-('身份统计信息', 'identity:stats', '查看身份认证统计信息'),
-('身份类型管理', 'identity:type:manage', '管理身份类型配置');
-
--- 为超级管理员角色分配身份认证相关权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT 1, id FROM permissions WHERE code LIKE 'identity:%';
-
--- 为管理员角色分配身份认证基础权限（除了类型管理）
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT 2, id FROM permissions WHERE code IN (
-  'identity:certification:list',
-  'identity:certification:review',
-  'identity:stats'
-);
-
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='身份认证记录表'; 
