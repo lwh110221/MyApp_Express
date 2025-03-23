@@ -191,4 +191,46 @@ CREATE TABLE IF NOT EXISTS identity_certifications (
   INDEX `idx_user_status` (`user_id`, `status`),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (reviewer_id) REFERENCES admins(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='身份认证记录表'; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='身份认证记录表';
+
+-- 求助帖子表
+CREATE TABLE `help_posts` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '帖子ID',
+    `user_id` BIGINT NOT NULL COMMENT '发帖用户ID',
+    `title` VARCHAR(200) NOT NULL COMMENT '标题',
+    `content` TEXT NOT NULL COMMENT '求助内容',
+    `images` JSON COMMENT '图片列表',
+    `category_id` BIGINT COMMENT '分类ID',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-关闭，1-开放，2-已解决',
+    `view_count` INT DEFAULT 0 COMMENT '浏览次数',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_category` (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='求助帖子表';
+
+-- 求助分类表
+CREATE TABLE `help_categories` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '分类ID',
+    `name` VARCHAR(50) NOT NULL COMMENT '分类名称',
+    `description` VARCHAR(200) COMMENT '分类描述',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    INDEX `idx_sort` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='求助分类表';
+
+-- 专家回答表
+CREATE TABLE `help_answers` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '回答ID',
+    `post_id` BIGINT NOT NULL COMMENT '帖子ID',
+    `expert_id` BIGINT NOT NULL COMMENT '专家用户ID',
+    `content` TEXT NOT NULL COMMENT '回答内容',
+    `images` JSON COMMENT '图片列表',
+    `is_accepted` TINYINT DEFAULT 0 COMMENT '是否被采纳：0-否，1-是',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (`post_id`) REFERENCES `help_posts`(`id`),
+    FOREIGN KEY (`expert_id`) REFERENCES `users`(`id`),
+    INDEX `idx_post_expert` (`post_id`, `expert_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='专家回答表'; 

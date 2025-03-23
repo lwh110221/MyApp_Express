@@ -16,6 +16,9 @@ const newsRoutes = require('./routes/newsRoutes');
 const ResponseUtil = require('./utils/responseUtil');
 const identityRoutes = require('./routes/identityRoutes');
 const loggerMiddleware = require('./middleware/loggerMiddleware');
+const helpRoutes = require('./routes/helpRoutes');
+const helpManageRoutes = require('./routes/admin/helpManageRoutes');
+const startFileCleanupTask = require('./tasks/fileCleanupTask');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -118,6 +121,8 @@ app.use('/api/captcha', captchaRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/identities', identityRoutes);
+app.use('/api/help', helpRoutes);
+app.use('/api/admin/help', helpManageRoutes);
 
 // 404 处理
 app.use((req, res) => {
@@ -141,6 +146,8 @@ process.on('SIGTERM', () => {
 
 app.listen(port, () => {
   console.log(`服务器运行在 http://localhost:${port}`);
+  // 启动文件清理定时任务
+  startFileCleanupTask();
 });
 
 module.exports = app;

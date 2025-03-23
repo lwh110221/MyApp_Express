@@ -1380,3 +1380,362 @@
    - 示例：
      - 创建/更新文章时：`2024-01-20T10:00:00Z`
      - 响应数据中：`2024-01-20T10:00:00.000Z`
+
+## 7. 专家求助管理模块
+
+### 7.1 求助分类管理
+
+#### 7.1.1 获取分类列表
+
+##### 请求信息
+- **接口**: `/help/categories`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `help:category:manage`
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": [
+        {
+            "id": 1,
+            "name": "种植技术",
+            "sort_order": 1,
+            "status": 1,
+            "created_at": "2024-01-20T10:00:00.000Z",
+            "updated_at": "2024-01-20T10:00:00.000Z"
+        }
+    ]
+}
+```
+
+#### 7.1.2 创建分类
+
+##### 请求信息
+- **接口**: `/help/categories`
+- **方法**: `POST`
+- **需要认证**: 是
+- **所需权限**: `help:category:manage`
+- **Content-Type**: `application/json`
+
+##### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| name | string | 是 | 分类名称 | 长度：2-20字符 |
+| sort_order | number | 否 | 排序 | 最小值0 |
+| status | number | 否 | 状态 | 0-禁用，1-启用 |
+
+##### 请求示例
+```json
+{
+    "name": "种植技术",
+    "sort_order": 1,
+    "status": 1
+}
+```
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "分类创建成功",
+    "data": {
+        "id": 1
+    }
+}
+```
+
+#### 7.1.3 更新分类
+
+##### 请求信息
+- **接口**: `/help/categories/:categoryId`
+- **方法**: `PUT`
+- **需要认证**: 是
+- **所需权限**: `help:category:manage`
+- **Content-Type**: `application/json`
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| categoryId | number | 分类ID |
+
+##### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| name | string | 否 | 分类名称 | 长度：2-20字符 |
+| sort_order | number | 否 | 排序 | 最小值0 |
+| status | number | 否 | 状态 | 0-禁用，1-启用 |
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "分类更新成功"
+}
+```
+
+#### 7.1.4 删除分类
+
+##### 请求信息
+- **接口**: `/help/categories/:categoryId`
+- **方法**: `DELETE`
+- **需要认证**: 是
+- **所需权限**: `help:category:manage`
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| categoryId | number | 分类ID |
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "分类删除成功"
+}
+```
+
+### 7.2 求助帖子管理
+
+#### 7.2.1 获取帖子列表
+
+##### 请求信息
+- **接口**: `/help/posts`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `help:post:manage`
+
+##### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| category_id | number | 否 | 分类ID | - |
+| status | number | 否 | 状态 | - |
+| keyword | string | 否 | 搜索关键词 | - |
+| startDate | string | 否 | 开始日期 | - |
+| endDate | string | 否 | 结束日期 | - |
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "title": "玉米苗期管理问题",
+                "content": "玉米苗期出现黄叶，请问是什么原因？",
+                "category_id": 1,
+                "category_name": "种植技术",
+                "user_id": 1,
+                "author_name": "张三",
+                "status": 1,
+                "view_count": 10,
+                "answer_count": 2,
+                "images": [
+                    "/uploads/help/image-1234567890.jpg"
+                ],
+                "created_at": "2024-01-20T10:00:00.000Z"
+            }
+        ],
+        "pagination": {
+            "total": 1,
+            "page": 1,
+            "limit": 10
+        }
+    }
+}
+```
+
+#### 7.2.2 获取帖子详情
+
+##### 请求信息
+- **接口**: `/help/posts/:postId`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `help:post:manage`
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 帖子ID |
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "id": 1,
+        "title": "玉米苗期管理问题",
+        "content": "玉米苗期出现黄叶，请问是什么原因？",
+        "category_id": 1,
+        "category_name": "种植技术",
+        "user_id": 1,
+        "author_name": "张三",
+        "status": 1,
+        "view_count": 11,
+        "images": [
+            "/uploads/help/image-1234567890.jpg"
+        ],
+        "created_at": "2024-01-20T10:00:00.000Z",
+        "answers": [
+            {
+                "id": 1,
+                "expert_id": 2,
+                "expert_name": "李四",
+                "content": "这种情况可能是缺素导致，建议...",
+                "is_accepted": 1,
+                "images": [
+                    "/uploads/help/answer-1234567890.jpg"
+                ],
+                "created_at": "2024-01-20T11:00:00.000Z"
+            }
+        ]
+    }
+}
+```
+
+#### 7.2.3 删除帖子
+
+##### 请求信息
+- **接口**: `/help/posts/:postId`
+- **方法**: `DELETE`
+- **需要认证**: 是
+- **所需权限**: `help:post:manage`
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 帖子ID |
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "帖子删除成功"
+}
+```
+
+### 7.3 回答管理
+
+#### 7.3.1 获取回答列表
+
+##### 请求信息
+- **接口**: `/help/answers`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `help:answer:manage`
+
+##### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| post_id | number | 否 | 帖子ID | - |
+| expert_id | number | 否 | 专家ID | - |
+| is_accepted | number | 否 | 是否采纳 | - |
+| startDate | string | 否 | 开始日期 | - |
+| endDate | string | 否 | 结束日期 | - |
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "post_id": 1,
+                "post_title": "玉米苗期管理问题",
+                "expert_id": 2,
+                "expert_name": "李四",
+                "content": "这种情况可能是缺素导致，建议...",
+                "is_accepted": 1,
+                "images": [
+                    "/uploads/help/answer-1234567890.jpg"
+                ],
+                "created_at": "2024-01-20T11:00:00.000Z"
+            }
+        ],
+        "pagination": {
+            "total": 1,
+            "page": 1,
+            "limit": 10
+        }
+    }
+}
+```
+
+#### 7.3.2 删除回答
+
+##### 请求信息
+- **接口**: `/help/answers/:answerId`
+- **方法**: `DELETE`
+- **需要认证**: 是
+- **所需权限**: `help:answer:manage`
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| answerId | number | 回答ID |
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "回答删除成功"
+}
+```
+
+### 7.4 统计数据
+
+#### 7.4.1 获取求助统计数据
+
+##### 请求信息
+- **接口**: `/help/stats/overview`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `help:stats`
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "total_posts": 100,
+        "total_answers": 280,
+        "solved_posts": 80,
+        "today_new_posts": 5,
+        "today_new_answers": 12,
+        "category_stats": [
+            {
+                "category_id": 1,
+                "category_name": "种植技术",
+                "post_count": 50,
+                "answer_count": 150
+            }
+        ],
+        "trend": {
+            "posts": [
+                {
+                    "date": "2024-01-20",
+                    "count": 5
+                }
+            ],
+            "answers": [
+                {
+                    "date": "2024-01-20",
+                    "count": 12
+                }
+            ]
+        }
+    }
+}
+```

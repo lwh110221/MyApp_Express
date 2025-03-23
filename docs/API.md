@@ -751,3 +751,405 @@ GET /moments/user/:userId?page=1&limit=10
 4. 分页接口说明：
    - page：页码，从1开始
    - limit：每页条数，默认10
+
+## 6. 专家求助模块
+
+### 6.1 获取求助分类列表
+
+#### 请求信息
+- **接口**: `/help/categories`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": [
+        {
+            "id": 1,
+            "name": "种植技术",
+            "sort_order": 1,
+            "status": 1
+        },
+        {
+            "id": 2,
+            "name": "病虫害防治",
+            "sort_order": 2,
+            "status": 1
+        }
+    ]
+}
+```
+
+### 6.2 发布求助
+
+#### 请求信息
+- **接口**: `/help/posts`
+- **方法**: `POST`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| title | string | 是 | 求助标题 | 长度：1-100字符 |
+| content | string | 是 | 求助内容 | 长度：1-2000字符 |
+| category_id | number | 是 | 分类ID | 大于0的整数 |
+| images | array | 否 | 图片URL数组 | 最多9张图片 |
+
+#### 请求示例
+```json
+{
+    "title": "玉米苗期管理问题",
+    "content": "玉米苗期出现黄叶，请问是什么原因？",
+    "category_id": 1,
+    "images": [
+        "/uploads/help/image-1234567890.jpg"
+    ]
+}
+```
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "发布成功",
+    "data": {
+        "id": 1
+    }
+}
+```
+
+### 6.3 获取求助列表
+
+#### 请求信息
+- **接口**: `/help/posts`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| category_id | number | 否 | 分类ID | - |
+| status | number | 否 | 状态(1-待解决,2-已解决) | - |
+| keyword | string | 否 | 搜索关键词 | - |
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "items": [
+            {
+                "id": 4,
+                "user_id": 1,
+                "title": "玉米苗期发黄怎么处理？",
+                "content": "最近种植的玉米苗期出现大面积发黄现象，请问可能是什么原因导致的？该如何处理？",
+                "images": [],
+                "category_id": 1,
+                "status": 1,
+                "view_count": 0,
+                "created_at": "2025-03-23T12:26:46.000Z",
+                "updated_at": "2025-03-23T12:26:46.000Z",
+                "author_name": "testuser1",
+                "category_name": "种植技术",
+                "answer_count": 0
+            },
+            {
+                "id": 5,
+                "user_id": 1,
+                "title": "水稻纹枯病如何防治",
+                "content": "水稻出现纹枯病症状，面积较大，求专业的防治方案。",
+                "images": [],
+                "category_id": 2,
+                "status": 1,
+                "view_count": 0,
+                "created_at": "2025-03-23T12:26:46.000Z",
+                "updated_at": "2025-03-23T12:26:46.000Z",
+                "author_name": "testuser1",
+                "category_name": "病虫害防治",
+                "answer_count": 0
+            },
+            {
+                "id": 3,
+                "user_id": 2,
+                "title": "水稻种植问题",
+                "content": "今年水稻叶片发黄，请问是什么原因？",
+                "images": [
+                    {
+                        "url": "/uploads/help/help-1742732712636-460822328.jpg",
+                        "filename": "help-1742732712636-460822328.jpg"
+                    }
+                ],
+                "category_id": 1,
+                "status": 1,
+                "view_count": 0,
+                "created_at": "2025-03-23T12:25:26.000Z",
+                "updated_at": "2025-03-23T12:25:26.000Z",
+                "author_name": "test",
+                "category_name": "种植技术",
+                "answer_count": 0
+            },
+            {
+                "id": 1,
+                "user_id": 1,
+                "title": "玉米苗期发黄怎么处理？",
+                "content": "最近种植的玉米苗期出现大面积发黄现象，请问可能是什么原因导致的？该如何处理？",
+                "images": [],
+                "category_id": 1,
+                "status": 1,
+                "view_count": 0,
+                "created_at": "2025-03-23T12:08:53.000Z",
+                "updated_at": "2025-03-23T12:08:53.000Z",
+                "author_name": "testuser1",
+                "category_name": "种植技术",
+                "answer_count": 1
+            },
+            {
+                "id": 2,
+                "user_id": 1,
+                "title": "水稻纹枯病如何防治",
+                "content": "水稻出现纹枯病症状，面积较大，求专业的防治方案。",
+                "images": [],
+                "category_id": 2,
+                "status": 1,
+                "view_count": 0,
+                "created_at": "2025-03-23T12:08:53.000Z",
+                "updated_at": "2025-03-23T12:08:53.000Z",
+                "author_name": "testuser1",
+                "category_name": "病虫害防治",
+                "answer_count": 0
+            }
+        ],
+        "pagination": {
+            "total": 5,
+            "page": 1,
+            "limit": 10
+        }
+    }
+}
+```
+
+### 6.4 获取求助详情
+
+#### 请求信息
+- **接口**: `/help/posts/:postId`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 求助ID |
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "id": 1,
+        "user_id": 1,
+        "title": "玉米苗期发黄怎么处理？",
+        "content": "最近种植的玉米苗期出现大面积发黄现象，请问可能是什么原因导致的？该如何处理？",
+        "images": [],
+        "category_id": 1,
+        "status": 1,
+        "view_count": 1,
+        "created_at": "2025-03-23T12:08:53.000Z",
+        "updated_at": "2025-03-23T12:49:07.000Z",
+        "author_name": "testuser1",
+        "category_name": "种植技术"
+    }
+}
+```
+
+### 6.5 更新求助状态
+
+#### 请求信息
+- **接口**: `/help/posts/:postId/status`
+- **方法**: `PUT`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 求助ID |
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| status | number | 是 | 状态 | 0-删除,1-待解决,2-已解决 |
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "更新成功"
+}
+```
+
+### 6.6 发表回答
+
+#### 请求信息
+- **接口**: `/help/posts/:postId/answers`
+- **方法**: `POST`
+- **需要认证**: 是
+- **需要专家身份**: 是
+- **Content-Type**: `application/json`
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 求助ID |
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| content | string | 是 | 回答内容 | 长度：1-2000字符 |
+| images | array | 否 | 图片URL数组 | 最多9张图片 |
+
+#### 请求示例
+```json
+{
+    "content": "这种情况可能是缺素导致，建议...",
+    "images": [
+        "/uploads/help/answer-1234567890.jpg"
+    ]
+}
+```
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "回答成功",
+    "data": {
+        "id": 1
+    }
+}
+```
+
+### 6.7 获取回答列表
+
+#### 请求信息
+- **接口**: `/help/posts/:postId/answers`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| postId | number | 求助ID |
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "items": [
+            {
+                "id": 1,
+                "post_id": 1,
+                "expert_id": 2,
+                "content": "根据描述，玉米苗期发黄可能有以下几个原因：\n1. 氮肥不足\n2. 土壤板结\n3. 缺铁或锌\n建议：\n1. 追施氮肥\n2. 中耕松土\n3. 喷施微量元素",
+                "images": [
+                    {
+                        "url": "/uploads/help/help-1742732712636-460822328.jpg",
+                        "filename": "help-1742732712636-460822328.jpg"
+                    }
+                ],
+                "is_accepted": 0,
+                "created_at": "2025-03-23T12:35:50.000Z",
+                "updated_at": "2025-03-23T12:35:50.000Z",
+                "expert_name": "test"
+            }
+        ],
+        "pagination": {
+            "total": 1,
+            "page": 1,
+            "limit": 10
+        }
+    }
+}
+```
+
+### 6.8 采纳回答
+
+#### 请求信息
+- **接口**: `/help/answers/:answerId/accept`
+- **方法**: `PUT`
+- **需要认证**: 是
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| answerId | number | 回答ID |
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "采纳成功"
+}
+```
+
+### 6.9 删除回答
+
+#### 请求信息
+- **接口**: `/help/answers/:answerId`
+- **方法**: `DELETE`
+- **需要认证**: 是
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| answerId | number | 回答ID |
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "删除成功"
+}
+```
+
+### 6.10 上传图片
+
+#### 请求信息
+- **接口**: `/help/upload`
+- **方法**: `POST`
+- **需要认证**: 是
+- **Content-Type**: `multipart/form-data`
+
+#### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| images | file[] | 是 | 图片文件 | 1. 每个文件≤5MB<br>2. 格式：jpg,jpeg,png<br>3. 最多9张 |
+
+#### 响应示例
+```json
+{
+    "code": 200,
+    "message": "图片上传成功",
+    "data": [
+        {
+            "url": "/uploads/help/image-1234567890.jpg",
+            "filename": "image-1234567890.jpg"
+        }
+    ]
+}
+```

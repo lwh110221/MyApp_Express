@@ -1,5 +1,6 @@
 const identityService = require('../services/identityService');
 const { ResponseUtil } = require('../utils/responseUtil');
+const logger = require('../utils/logger');
 
 /**
  * 身份验证中间件
@@ -10,7 +11,7 @@ const { ResponseUtil } = require('../utils/responseUtil');
 const identityCheck = (requiredIdentities, options = {}) => {
   return async (req, res, next) => {
     const { mode = 'ANY' } = options;
-    const userId = req.user.id;
+    const userId = req.userData.userId;
 
     try {
       // 转换为数组形式
@@ -32,14 +33,7 @@ const identityCheck = (requiredIdentities, options = {}) => {
         : validations.every(v => v.valid);
 
       if (!hasRequired) {
-        return ResponseUtil.fail(res, {
-          code: 403,
-          message: '需要相应身份认证',
-          data: {
-            required: identityTypes,
-            mode
-          }
-        });
+        return ResponseUtil.error(res, '需要相应身份认证', 403);
       }
 
       // 将用户身份信息附加到请求对象
@@ -49,11 +43,8 @@ const identityCheck = (requiredIdentities, options = {}) => {
 
       next();
     } catch (error) {
-      return ResponseUtil.fail(res, {
-        code: 500,
-        message: '身份验证过程出错',
-        error: error.message
-      });
+      logger.error('身份验证错误:', error);
+      return ResponseUtil.error(res, '身份验证过程出错', 500);
     }
   };
 };
