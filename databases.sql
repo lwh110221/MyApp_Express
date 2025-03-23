@@ -132,7 +132,7 @@ SELECT 1, id FROM permissions;
 
 -- 创建超级管理员账号
 INSERT INTO admins (username, password, email, status) VALUES 
-('lwhadmin', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'admin@example.com', 1);
+('lwhadmin', '$2a$10$UOFsUssH5GwPGL1zUeUTCe8wIGTbn4nQ0Ups7Jxd/tnK2djeDIDMa', 'lwhadmin@admin.com', 1);
 
 -- 为超级管理员账号分配超级管理员角色
 INSERT INTO admin_roles (admin_id, role_id) VALUES (1, 1);
@@ -155,13 +155,11 @@ CREATE TABLE `admin_operation_logs` (
 
 -- 插入测试用户数据
 INSERT INTO users (username, password, email, points, status) VALUES
-('testuser1', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'test1@example.com', 100, 1),
-('testuser2', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'test2@example.com', 200, 1);
+('testuser1', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'test1@example.com', 100, 1);
 
 -- 插入用户资料
 INSERT INTO user_profiles (user_id, bio) VALUES
-(1, '这是测试用户1的简介'),
-(2, '这是测试用户2的简介');
+(1, '这是测试用户1的简介');
 
 -- 创建新闻分类表
 CREATE TABLE `news_categories` (

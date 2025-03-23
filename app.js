@@ -29,7 +29,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       imgSrc: ["'self'", 'data:', 'blob:', '*'],
-      connectSrc: ["'self'", process.env.CLIENT_URL || 'http://localhost:5173']
+      connectSrc: ["'self'", 'http://localhost:*'] // 允许所有本地端口
     }
   }
 }));
@@ -66,6 +66,12 @@ app.use(cors({
     // 允许没有origin的请求（比如同源请求）
     if (!origin) return callback(null, true);
     
+    // 允许所有本地请求
+    if (origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+    
+    // 检查其他允许的域名
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -101,7 +107,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
   etag: true,
   setHeaders: function (res, path, stat) {
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.set('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+    res.set('Access-Control-Allow-Origin', 'http://localhost:*'); // 允许所有本地端口
   }
 }));
 
