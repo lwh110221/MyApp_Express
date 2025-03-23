@@ -12,7 +12,14 @@ const postValidation = [
         .isLength({ max: 200 }).withMessage('标题最多200字符'),
     body('content').trim().notEmpty().withMessage('内容不能为空')
         .isLength({ max: 5000 }).withMessage('内容最多5000字符'),
-    body('images').optional().isArray().withMessage('图片必须是数组格式')
+    body('images').optional().isArray().withMessage('图片必须是数组格式'),
+    body('tags').optional().isArray().withMessage('标签必须是数组格式')
+        .custom(value => {
+            if (value && value.length > 5) {
+                throw new Error('标签最多5个');
+            }
+            return true;
+        })
 ];
 
 const commentValidation = [
@@ -33,8 +40,36 @@ router.post('/upload',
 router.get('/posts',
     query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
     query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('每页数量必须在1-50之间'),
+    query('sort').optional().isIn(['latest', 'popular', 'hot']).withMessage('排序方式无效'),
+    query('tag').optional().isString().withMessage('标签必须是字符串'),
     validate([]),
     communityController.getPostList
+);
+
+// 搜索帖子
+router.get('/posts/search',
+    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
+    query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('每页数量必须在1-50之间'),
+    query('keyword').optional().isString().withMessage('关键词必须是字符串'),
+    query('sort').optional().isIn(['latest', 'popular', 'hot']).withMessage('排序方式无效'),
+    validate([]),
+    communityController.searchPosts
+);
+
+// 获取热门标签
+router.get('/tags/hot',
+    query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('数量必须在1-50之间'),
+    validate([]),
+    communityController.getHotTags
+);
+
+// 通过标签获取帖子
+router.get('/tags/:tagName/posts',
+    param('tagName').isString().withMessage('标签名无效'),
+    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
+    query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('每页数量必须在1-50之间'),
+    validate([]),
+    communityController.getPostsByTag
 );
 
 // 获取帖子详情

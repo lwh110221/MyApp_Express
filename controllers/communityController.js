@@ -5,24 +5,33 @@ const logger = require('../utils/logger');
 const FileCleanup = require('../utils/fileCleanup');
 const path = require('path');
 const PointService = require('../services/pointService');
+const TagService = require('../services/tagService');
 
 class CommunityController extends BaseController {
     // 发布帖子
     async createPost(req, res) {
         const connection = await pool.getConnection();
         try {
-            const { title, content, images } = req.body;
+            const { title, content, images, tags } = req.body;
             const userId = req.userData.userId;
 
             await connection.beginTransaction();
 
+            // 处理标签
+            const tagIds = await TagService.getOrCreateTags(connection, tags);
+
             // 插入帖子
             const [result] = await connection.query(
                 `INSERT INTO community_posts 
-                (user_id, title, content, images) 
-                VALUES (?, ?, ?, ?)`,
-                [userId, title, content, JSON.stringify(images || [])]
+                (user_id, title, content, images, tags) 
+                VALUES (?, ?, ?, ?, ?)`,
+                [userId, title, content, JSON.stringify(images || []), JSON.stringify(tagIds)]
             );
+
+            // 添加标签与帖子的关联
+            if (tagIds.length > 0) {
+                await TagService.updatePostTags(connection, result.insertId, tagIds);
+            }
 
             // 添加积分记录
             await PointService.addPoints(
@@ -46,53 +55,93 @@ class CommunityController extends BaseController {
     // 获取帖子列表
     async getPostList(req, res) {
         try {
-            const { page = 1, limit = 10, keyword } = req.query;
+            const { page = 1, limit = 10, keyword, tag, sort = 'latest' } = req.query;
             const offset = (page - 1) * limit;
 
-            let whereClause = 'WHERE p.status = 1';
+            let baseQuery = `
+                SELECT 
+                    p.*,
+                    u.username as author_name
+                FROM community_posts p
+                LEFT JOIN users u ON p.user_id = u.id`;
+            
+            let countQuery = `
+                SELECT COUNT(*) as total 
+                FROM community_posts p`;
+
+            let whereClause = ' WHERE p.status = 1';
             const params = [];
 
+            // 标签筛选
+            if (tag) {
+                baseQuery += ` 
+                JOIN community_post_tags pt ON p.id = pt.post_id
+                JOIN community_tags t ON pt.tag_id = t.id`;
+                
+                countQuery += ` 
+                JOIN community_post_tags pt ON p.id = pt.post_id
+                JOIN community_tags t ON pt.tag_id = t.id`;
+                
+                whereClause += ' AND t.name = ?';
+                params.push(tag);
+            }
+
+            // 关键词搜索
             if (keyword) {
                 whereClause += ' AND (p.title LIKE ? OR p.content LIKE ?)';
                 params.push(`%${keyword}%`, `%${keyword}%`);
             }
 
+            baseQuery += whereClause;
+            countQuery += whereClause;
+
             // 获取总数
-            const [countResult] = await pool.query(
-                `SELECT COUNT(*) as total 
-                FROM community_posts p 
-                ${whereClause}`,
-                params
-            );
+            const [countResult] = await pool.query(countQuery, params);
             const total = countResult[0].total;
 
+            // 排序方式
+            let orderClause = '';
+            if (sort === 'popular') {
+                orderClause = ' ORDER BY p.view_count DESC, p.like_count DESC, p.comment_count DESC, p.created_at DESC';
+            } else if (sort === 'hot') {
+                orderClause = ' ORDER BY p.like_count DESC, p.comment_count DESC, p.created_at DESC';
+            } else {
+                // 默认按最新排序
+                orderClause = ' ORDER BY p.created_at DESC';
+            }
+
+            baseQuery += orderClause + ' LIMIT ? OFFSET ?';
+            
             // 获取帖子列表
             const [posts] = await pool.query(
-                `SELECT 
-                    p.*,
-                    u.username as author_name
-                FROM community_posts p
-                LEFT JOIN users u ON p.user_id = u.id
-                ${whereClause}
-                ORDER BY p.created_at DESC
-                LIMIT ? OFFSET ?`,
+                baseQuery,
                 [...params, parseInt(limit), offset]
             );
 
-            this.success(res, {
-                items: posts.map(post => {
+            // 获取每个帖子的标签
+            const connection = await pool.getConnection();
+            try {
+                for (const post of posts) {
+                    // 解析图片数据
                     try {
-                        // 解析图片数据
                         post.images = typeof post.images === 'string' ? 
                             JSON.parse(post.images) : 
                             (Array.isArray(post.images) ? post.images : []);
-                        return post;
                     } catch (err) {
                         logger.error('解析帖子图片数据错误:', err);
                         post.images = [];
-                        return post;
                     }
-                }),
+
+                    // 获取标签
+                    const tags = await TagService.getPostTags(connection, post.id);
+                    post.tags = tags.map(tag => tag.name);
+                }
+            } finally {
+                connection.release();
+            }
+
+            this.success(res, {
+                items: posts,
                 pagination: {
                     total,
                     page: parseInt(page),
@@ -136,8 +185,9 @@ class CommunityController extends BaseController {
             }
 
             const post = posts[0];
+            
+            // 解析图片数据
             try {
-                // 解析图片数据
                 post.images = typeof post.images === 'string' ? 
                     JSON.parse(post.images) : 
                     (Array.isArray(post.images) ? post.images : []);
@@ -145,6 +195,10 @@ class CommunityController extends BaseController {
                 logger.error('解析帖子图片数据错误:', err);
                 post.images = [];
             }
+
+            // 获取标签
+            const tags = await TagService.getPostTags(connection, post.id);
+            post.tags = tags.map(tag => tag.name);
 
             await connection.commit();
             this.success(res, post);
@@ -159,37 +213,69 @@ class CommunityController extends BaseController {
 
     // 更新帖子
     async updatePost(req, res) {
+        const connection = await pool.getConnection();
         try {
             const { postId } = req.params;
-            const { title, content, images } = req.body;
+            const { title, content, images, tags } = req.body;
             const userId = req.userData.userId;
 
-            // 检查是否是帖子作者
-            const [posts] = await pool.query(
-                'SELECT user_id, images FROM community_posts WHERE id = ? AND status = 1',
-                [postId]
+            // 检查帖子是否存在且属于当前用户
+            const [posts] = await connection.query(
+                'SELECT * FROM community_posts WHERE id = ? AND user_id = ? AND status = 1',
+                [postId, userId]
             );
 
             if (posts.length === 0) {
-                return this.error(res, '帖子不存在或已删除', 404);
+                return this.error(res, '帖子不存在或无权修改', 403);
             }
 
-            if (posts[0].user_id !== userId) {
-                return this.error(res, '无权操作此帖子', 403);
+            await connection.beginTransaction();
+
+            // 更新参数集合
+            const updateParams = [];
+            const updateFields = [];
+
+            if (title !== undefined) {
+                updateFields.push('title = ?');
+                updateParams.push(title);
             }
 
-            // 更新帖子
-            await pool.query(
-                `UPDATE community_posts 
-                SET title = ?, content = ?, images = ? 
-                WHERE id = ?`,
-                [title, content, JSON.stringify(images || []), postId]
-            );
+            if (content !== undefined) {
+                updateFields.push('content = ?');
+                updateParams.push(content);
+            }
 
+            if (images !== undefined) {
+                updateFields.push('images = ?');
+                updateParams.push(JSON.stringify(images || []));
+            }
+
+            // 处理标签
+            if (tags !== undefined) {
+                const tagIds = await TagService.getOrCreateTags(connection, tags);
+                updateFields.push('tags = ?');
+                updateParams.push(JSON.stringify(tagIds));
+                
+                // 更新帖子-标签关联
+                await TagService.updatePostTags(connection, postId, tagIds);
+            }
+
+            if (updateFields.length > 0) {
+                // 执行更新
+                await connection.query(
+                    `UPDATE community_posts SET ${updateFields.join(', ')} WHERE id = ?`,
+                    [...updateParams, postId]
+                );
+            }
+
+            await connection.commit();
             this.success(res, null, '更新成功');
         } catch (error) {
+            await connection.rollback();
             logger.error('更新社区帖子错误:', error);
             this.error(res, '更新帖子失败');
+        } finally {
+            connection.release();
         }
     }
 
@@ -658,6 +744,194 @@ class CommunityController extends BaseController {
         } catch (error) {
             logger.error('检查点赞状态错误:', error);
             this.error(res, '检查点赞状态失败');
+        }
+    }
+
+    // 获取热门标签
+    async getHotTags(req, res) {
+        try {
+            const { limit = 10 } = req.query;
+            const tags = await TagService.getHotTags(parseInt(limit));
+            this.success(res, { tags });
+        } catch (error) {
+            logger.error('获取热门标签错误:', error);
+            this.error(res, '获取热门标签失败');
+        }
+    }
+
+    // 通过标签获取帖子
+    async getPostsByTag(req, res) {
+        try {
+            const { tagName } = req.params;
+            const { page = 1, limit = 10 } = req.query;
+            const offset = (page - 1) * limit;
+
+            // 获取总数
+            const [countResult] = await pool.query(
+                `SELECT COUNT(DISTINCT p.id) as total 
+                FROM community_posts p
+                JOIN community_post_tags pt ON p.id = pt.post_id
+                JOIN community_tags t ON pt.tag_id = t.id
+                WHERE p.status = 1 AND t.name = ?`,
+                [tagName]
+            );
+            const total = countResult[0].total;
+
+            // 获取帖子列表
+            const [posts] = await pool.query(
+                `SELECT 
+                    p.*,
+                    u.username as author_name
+                FROM community_posts p
+                JOIN community_post_tags pt ON p.id = pt.post_id
+                JOIN community_tags t ON pt.tag_id = t.id
+                LEFT JOIN users u ON p.user_id = u.id
+                WHERE p.status = 1 AND t.name = ?
+                GROUP BY p.id
+                ORDER BY p.created_at DESC
+                LIMIT ? OFFSET ?`,
+                [tagName, parseInt(limit), offset]
+            );
+
+            // 获取每个帖子的标签
+            const connection = await pool.getConnection();
+            try {
+                for (const post of posts) {
+                    // 解析图片数据
+                    try {
+                        post.images = typeof post.images === 'string' ? 
+                            JSON.parse(post.images) : 
+                            (Array.isArray(post.images) ? post.images : []);
+                    } catch (err) {
+                        logger.error('解析帖子图片数据错误:', err);
+                        post.images = [];
+                    }
+
+                    // 获取标签
+                    const tags = await TagService.getPostTags(connection, post.id);
+                    post.tags = tags.map(tag => tag.name);
+                }
+            } finally {
+                connection.release();
+            }
+
+            this.success(res, {
+                items: posts,
+                pagination: {
+                    total,
+                    page: parseInt(page),
+                    limit: parseInt(limit)
+                }
+            });
+        } catch (error) {
+            logger.error('通过标签获取帖子错误:', error);
+            this.error(res, '获取帖子列表失败');
+        }
+    }
+
+    // 搜索帖子
+    async searchPosts(req, res) {
+        try {
+            const { keyword, tags, sort = 'latest', page = 1, limit = 10 } = req.query;
+            const offset = (page - 1) * limit;
+
+            let baseQuery = `
+                SELECT 
+                    p.*,
+                    u.username as author_name
+                FROM community_posts p
+                LEFT JOIN users u ON p.user_id = u.id`;
+            
+            let countQuery = `
+                SELECT COUNT(DISTINCT p.id) as total 
+                FROM community_posts p`;
+            
+            let whereClause = ' WHERE p.status = 1';
+            const params = [];
+
+            // 标签筛选
+            if (tags) {
+                const tagArray = Array.isArray(tags) ? tags : (typeof tags === 'string' ? [tags] : []);
+                
+                if (tagArray.length > 0) {
+                    baseQuery += ` 
+                    JOIN community_post_tags pt ON p.id = pt.post_id
+                    JOIN community_tags t ON pt.tag_id = t.id`;
+                    
+                    countQuery += ` 
+                    JOIN community_post_tags pt ON p.id = pt.post_id
+                    JOIN community_tags t ON pt.tag_id = t.id`;
+                    
+                    whereClause += ' AND t.name IN (?)';
+                    params.push(tagArray);
+                }
+            }
+
+            // 关键词搜索
+            if (keyword) {
+                whereClause += ' AND (p.title LIKE ? OR p.content LIKE ?)';
+                params.push(`%${keyword}%`, `%${keyword}%`);
+            }
+
+            baseQuery += whereClause;
+            countQuery += whereClause;
+
+            // 获取总数
+            const [countResult] = await pool.query(countQuery, params);
+            const total = countResult[0].total;
+
+            // 排序方式
+            let orderClause = '';
+            if (sort === 'popular') {
+                orderClause = ' ORDER BY p.view_count DESC, p.like_count DESC, p.comment_count DESC, p.created_at DESC';
+            } else if (sort === 'hot') {
+                orderClause = ' ORDER BY p.like_count DESC, p.comment_count DESC, p.created_at DESC';
+            } else {
+                // 默认按最新排序
+                orderClause = ' ORDER BY p.created_at DESC';
+            }
+
+            baseQuery += ` GROUP BY p.id ${orderClause} LIMIT ? OFFSET ?`;
+            
+            // 获取帖子列表
+            const [posts] = await pool.query(
+                baseQuery,
+                [...params, parseInt(limit), offset]
+            );
+
+            // 获取每个帖子的标签
+            const connection = await pool.getConnection();
+            try {
+                for (const post of posts) {
+                    // 解析图片数据
+                    try {
+                        post.images = typeof post.images === 'string' ? 
+                            JSON.parse(post.images) : 
+                            (Array.isArray(post.images) ? post.images : []);
+                    } catch (err) {
+                        logger.error('解析帖子图片数据错误:', err);
+                        post.images = [];
+                    }
+
+                    // 获取标签
+                    const tags = await TagService.getPostTags(connection, post.id);
+                    post.tags = tags.map(tag => tag.name);
+                }
+            } finally {
+                connection.release();
+            }
+
+            this.success(res, {
+                items: posts,
+                pagination: {
+                    total,
+                    page: parseInt(page),
+                    limit: parseInt(limit)
+                }
+            });
+        } catch (error) {
+            logger.error('搜索帖子错误:', error);
+            this.error(res, '搜索帖子失败');
         }
     }
 }

@@ -1364,7 +1364,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-## 7. 社区模块
+## 7. 社区模块 (Community)
 
 ### 7.1 获取帖子列表
 
@@ -1380,7 +1380,7 @@ GET /moments/user/:userId?page=1&limit=10
 | limit | number | 否 | 每页条数 | 10 |
 | tag | string | 否 | 标签筛选 | - |
 | keyword | string | 否 | 搜索关键词 | - |
-| sort | string | 否 | 排序方式：latest(最新), popular(热门) | latest |
+| sort | string | 否 | 排序方式：latest(最新), popular(热门), hot(最热) | latest |
 
 #### 响应示例
 ```json
@@ -1417,7 +1417,150 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.2 获取帖子详情
+### 7.2 搜索帖子
+
+#### 请求信息
+- **接口**: `/community/posts/search`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| keyword | string | 否 | 搜索关键词 | - |
+| tags | string/array | 否 | 标签筛选（多个标签用逗号分隔或传递数组） | - |
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+| sort | string | 否 | 排序方式：latest(最新), popular(热门), hot(最热) | latest |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "title": "搜索结果帖子",
+        "content": "包含关键词的内容...",
+        "images": ["http://example.com/image1.jpg"],
+        "tags": ["旅行", "分享"],
+        "author": {
+          "id": 1,
+          "username": "user1",
+          "avatar": "http://example.com/avatar.jpg"
+        },
+        "view_count": 56,
+        "like_count": 12,
+        "comment_count": 5,
+        "created_at": "2024-01-16T10:20:00.000Z",
+        "updated_at": "2024-01-16T10:25:00.000Z",
+        "is_liked": false
+      }
+      // ... 更多搜索结果
+    ],
+    "pagination": {
+      "total": 24,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### 7.3 获取热门标签
+
+#### 请求信息
+- **接口**: `/community/tags/hot`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| limit | number | 否 | 返回标签数量 | 10 |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "tags": [
+      {
+        "id": 2,
+        "name": "旅行",
+        "used_count": 156
+      },
+      {
+        "id": 5,
+        "name": "美食",
+        "used_count": 124
+      },
+      {
+        "id": 1,
+        "name": "生活",
+        "used_count": 98
+      }
+      // ... 更多标签
+    ]
+  }
+}
+```
+
+### 7.4 获取特定标签下的帖子
+
+#### 请求信息
+- **接口**: `/community/tags/{tagName}/posts`
+- **方法**: `GET`
+- **需要认证**: 否
+
+#### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| tagName | string | 标签名称 |
+
+#### 查询参数
+| 参数名 | 类型 | 必填 | 说明 | 默认值 |
+|--------|------|------|------|---------|
+| page | number | 否 | 页码 | 1 |
+| limit | number | 否 | 每页条数 | 10 |
+
+#### 响应示例
+```json
+{
+  "code": 200,
+  "data": {
+    "items": [
+      {
+        "id": 5,
+        "title": "带有指定标签的帖子",
+        "content": "帖子内容...",
+        "images": ["http://example.com/tag_post_image.jpg"],
+        "tags": ["旅行", "分享", "摄影"],
+        "author": {
+          "id": 3,
+          "username": "user3",
+          "avatar": "http://example.com/avatar3.jpg"
+        },
+        "view_count": 78,
+        "like_count": 23,
+        "comment_count": 8,
+        "created_at": "2024-01-17T14:30:00.000Z",
+        "updated_at": "2024-01-17T14:35:00.000Z",
+        "is_liked": false
+      }
+      // ... 更多帖子
+    ],
+    "pagination": {
+      "total": 32,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### 7.5 获取帖子详情
 
 #### 请求信息
 - **接口**: `/community/posts/{postId}`
@@ -1454,7 +1597,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.3 创建帖子
+### 7.6 创建帖子
 
 #### 请求信息
 - **接口**: `/community/posts`
@@ -1493,7 +1636,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.4 更新帖子
+### 7.7 更新帖子
 
 #### 请求信息
 - **接口**: `/community/posts/{postId}`
@@ -1532,7 +1675,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.5 删除帖子
+### 7.8 删除帖子
 
 #### 请求信息
 - **接口**: `/community/posts/{postId}`
@@ -1552,7 +1695,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.6 获取帖子评论
+### 7.9 获取帖子评论
 
 #### 请求信息
 - **接口**: `/community/posts/{postId}/comments`
@@ -1601,7 +1744,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.7 发表评论
+### 7.10 发表评论
 
 #### 请求信息
 - **接口**: `/community/posts/{postId}/comments`
@@ -1640,7 +1783,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.8 删除评论
+### 7.11 删除评论
 
 #### 请求信息
 - **接口**: `/community/comments/{commentId}`
@@ -1660,7 +1803,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.9 点赞/取消点赞帖子
+### 7.12 点赞/取消点赞帖子
 
 #### 请求信息
 - **接口**: `/community/posts/{postId}/like`
@@ -1696,7 +1839,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.10 点赞/取消点赞评论
+### 7.13 点赞/取消点赞评论
 
 #### 请求信息
 - **接口**: `/community/comments/{commentId}/like`
@@ -1732,7 +1875,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.11 获取用户积分记录
+### 7.14 获取用户积分记录
 
 #### 请求信息
 - **接口**: `/users/points/records`
@@ -1776,7 +1919,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.12 获取用户主页资料
+### 7.15 获取用户主页资料
 
 #### 请求信息
 - **接口**: `/users/{userId}/profile`
@@ -1808,7 +1951,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.13 关注用户
+### 7.16 关注用户
 
 #### 请求信息
 - **接口**: `/users/{userId}/follow`
@@ -1831,7 +1974,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.14 取消关注用户
+### 7.17 取消关注用户
 
 #### 请求信息
 - **接口**: `/users/{userId}/unfollow`
@@ -1854,7 +1997,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.15 获取用户关注列表
+### 7.18 获取用户关注列表
 
 #### 请求信息
 - **接口**: `/users/{userId}/following`
@@ -1897,7 +2040,7 @@ GET /moments/user/:userId?page=1&limit=10
 }
 ```
 
-### 7.16 获取用户粉丝列表
+### 7.19 获取用户粉丝列表
 
 #### 请求信息
 - **接口**: `/users/{userId}/followers`
