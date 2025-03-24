@@ -34,10 +34,22 @@ class NotFoundError extends AppError {
   }
 }
 
+// 添加 BusinessError 类
+class BusinessError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'BusinessError';
+    this.statusCode = 400;
+    
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
 module.exports = {
   AppError,
   ValidationError,
   AuthenticationError,
   AuthorizationError,
-  NotFoundError
+  NotFoundError,
+  BusinessError
 }; 

@@ -61,9 +61,11 @@ class CommunityController extends BaseController {
             let baseQuery = `
                 SELECT 
                     p.*,
-                    u.username as author_name
+                    u.username as author_name,
+                    up.profile_picture as author_avatar
                 FROM community_posts p
-                LEFT JOIN users u ON p.user_id = u.id`;
+                LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id`;
             
             let countQuery = `
                 SELECT COUNT(*) as total 
@@ -172,9 +174,11 @@ class CommunityController extends BaseController {
             const [posts] = await connection.query(
                 `SELECT 
                     p.*,
-                    u.username as author_name
+                    u.username as author_name,
+                    up.profile_picture as author_avatar
                 FROM community_posts p
                 LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id
                 WHERE p.id = ? AND p.status = 1`,
                 [postId]
             );
@@ -443,9 +447,11 @@ class CommunityController extends BaseController {
             const [comments] = await pool.query(
                 `SELECT 
                     c.*,
-                    u.username as author_name
+                    u.username as author_name,
+                    up.profile_picture as author_avatar
                 FROM community_comments c
                 LEFT JOIN users u ON c.user_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id
                 WHERE c.post_id = ? AND c.status = 1
                 ORDER BY c.created_at DESC
                 LIMIT ? OFFSET ?`,
@@ -781,11 +787,13 @@ class CommunityController extends BaseController {
             const [posts] = await pool.query(
                 `SELECT 
                     p.*,
-                    u.username as author_name
+                    u.username as author_name,
+                    up.profile_picture as author_avatar
                 FROM community_posts p
                 JOIN community_post_tags pt ON p.id = pt.post_id
                 JOIN community_tags t ON pt.tag_id = t.id
                 LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id
                 WHERE p.status = 1 AND t.name = ?
                 GROUP BY p.id
                 ORDER BY p.created_at DESC
@@ -838,9 +846,11 @@ class CommunityController extends BaseController {
             let baseQuery = `
                 SELECT 
                     p.*,
-                    u.username as author_name
+                    u.username as author_name,
+                    up.profile_picture as author_avatar
                 FROM community_posts p
-                LEFT JOIN users u ON p.user_id = u.id`;
+                LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id`;
             
             let countQuery = `
                 SELECT COUNT(DISTINCT p.id) as total 

@@ -78,10 +78,12 @@ class HelpController {
                 `SELECT 
                     p.*,
                     u.username as author_name,
+                    up.profile_picture as author_avatar,
                     c.name as category_name,
                     (SELECT COUNT(*) FROM help_answers WHERE post_id = p.id) as answer_count
                 FROM help_posts p
                 LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id
                 LEFT JOIN help_categories c ON p.category_id = c.id
                 ${whereClause}
                 ORDER BY p.created_at DESC
@@ -140,9 +142,11 @@ class HelpController {
                 `SELECT 
                     p.*,
                     u.username as author_name,
+                    up.profile_picture as author_avatar,
                     c.name as category_name
                 FROM help_posts p
                 LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id
                 LEFT JOIN help_categories c ON p.category_id = c.id
                 WHERE p.id = ?`,
                 [postId]
@@ -270,9 +274,11 @@ class HelpController {
             const [answers] = await pool.query(
                 `SELECT 
                     a.*,
-                    u.username as expert_name
+                    u.username as expert_name,
+                    up.profile_picture as expert_avatar 
                 FROM help_answers a
                 LEFT JOIN users u ON a.expert_id = u.id
+                LEFT JOIN user_profiles up ON u.id = up.user_id
                 WHERE a.post_id = ?
                 ORDER BY a.is_accepted DESC, a.created_at DESC
                 LIMIT ? OFFSET ?`,
@@ -415,12 +421,12 @@ class HelpController {
                 return ResponseUtil.error(res, '请选择要上传的图片');
             }
 
-            const uploadedFiles = req.files.map(file => ({
+            const imageUrls = req.files.map(file => ({
                 url: `/uploads/help/${path.basename(file.path)}`,
-                filename: path.basename(file.path)
+                name: file.originalname
             }));
 
-            return ResponseUtil.success(res, uploadedFiles, '图片上传成功');
+            return ResponseUtil.success(res, { imageUrls }, '图片上传成功');
         } catch (error) {
             // 上传失败时删除已上传的文件
             if (req.files) {

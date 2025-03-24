@@ -16,10 +16,25 @@ class IdentityService {
         AND (expiration_time IS NULL OR expiration_time > NOW())
       `;
       const [identities] = await pool.query(sql, [userId]);
-      return identities.map(identity => ({
-        ...identity,
-        meta_data: JSON.parse(identity.meta_data || '{}')
-      }));
+      return identities.map(identity => {
+        let metaData = {};
+        try {
+          // 检查meta_data是否已经是对象
+          if (typeof identity.meta_data === 'object' && identity.meta_data !== null) {
+            metaData = identity.meta_data;
+          } else {
+            // 尝试解析字符串
+            metaData = JSON.parse(identity.meta_data || '{}');
+          }
+        } catch (error) {
+          console.warn('解析meta_data失败，使用空对象:', error);
+        }
+        
+        return {
+          ...identity,
+          meta_data: metaData
+        };
+      });
     } catch (error) {
       console.error('获取用户身份列表错误:', error);
       throw error;

@@ -326,15 +326,20 @@ exports.getUserProfile = async (req, res) => {
       isFollowed = await FollowService.checkIsFollowed(currentUserId, userId);
     }
     
-    // 获取用户身份
+    // 获取用户身份，包含详细信息
     const [identities] = await pool.query(
-      `SELECT identity_type FROM user_identities 
+      `SELECT * FROM user_identities 
        WHERE user_id = ? AND status = 1 
        AND (expiration_time IS NULL OR expiration_time > NOW())`,
       [userId]
     );
     
-    const identityTypes = identities.map(i => i.identity_type);
+    // 加载身份类型信息
+    const { getIdentityTypeInfo } = require('../config/identityTypes');
+    const identitiesWithInfo = identities.map(identity => ({
+      ...identity,
+      typeInfo: getIdentityTypeInfo(identity.identity_type)
+    }));
     
     res.json({
       code: 200,
@@ -348,7 +353,7 @@ exports.getUserProfile = async (req, res) => {
         follower_count: followStats.follower_count,
         following_count: followStats.following_count,
         is_followed: isFollowed,
-        identity_types: identityTypes,
+        identities: identitiesWithInfo,
         points: user.points
       }
     });
@@ -368,6 +373,15 @@ exports.followUser = async (req, res) => {
     const followerId = req.userData.userId;
     
     const result = await FollowService.followUser(followerId, userId);
+    
+    // 如果已经关注过，返回特殊状态码但仍然是成功
+    if (result.already_followed) {
+      return res.json({
+        code: 200,
+        already_followed: true,
+        message: result.message || '已经关注过该用户'
+      });
+    }
     
     res.json({
       code: 200,

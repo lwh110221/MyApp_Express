@@ -36,7 +36,13 @@ class FollowService {
       );
       
       if (exists.length > 0) {
-        throw new BusinessError('已经关注过该用户');
+        // 已经关注过，返回成功但带有标记
+        await connection.commit();
+        return { 
+          success: true, 
+          already_followed: true,
+          message: '已经关注过该用户'
+        };
       }
       
       // 添加关注记录
@@ -46,7 +52,11 @@ class FollowService {
       );
       
       await connection.commit();
-      return { success: true };
+      return { 
+        success: true,
+        already_followed: false,
+        message: '关注成功' 
+      };
     } catch (error) {
       await connection.rollback();
       if (error instanceof BusinessError) {
