@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 const upload = require('../config/multer');
 const { validate } = require('../middleware/validator');
 const { param, query } = require('express-validator');
+const jwt = require('jsonwebtoken');
 
 // 用户注册
 router.post('/register', captchaController.verifyCaptcha, userController.register);
@@ -48,10 +49,25 @@ router.get('/points/records',
   userController.getPointRecords
 );
 
-// 获取用户主页资料
+// 获取用户主页资料（可选认证）
 router.get('/:userId/profile',
   param('userId').isInt().withMessage('无效的用户ID'),
   validate([]),
+  (req, res, next) => {
+    // 可选认证中间件
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.userData = decoded;
+      }
+      next();
+    } catch (error) {
+      // 忽略认证错误，作为匿名用户继续
+      next();
+    }
+  },
   userController.getUserProfile
 );
 

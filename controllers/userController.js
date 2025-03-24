@@ -352,6 +352,8 @@ exports.getUserProfile = async (req, res) => {
         post_count: postStats[0].count,
         follower_count: followStats.follower_count,
         following_count: followStats.following_count,
+        followers_count: followStats.follower_count,
+        followings_count: followStats.following_count,
         is_followed: isFollowed,
         identities: identitiesWithInfo,
         points: user.points
