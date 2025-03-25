@@ -31,9 +31,11 @@ class CartController extends BaseController {
       const [items] = await db.execute(
         `SELECT 
           ci.id, ci.product_id, ci.quantity, ci.selected,
-          p.title, p.price, p.original_price, p.stock, p.unit, p.images
+          p.title as name, p.price, p.original_price, p.stock, p.unit, p.images,
+          u.username as seller_name, p.location
          FROM cart_items ci
          JOIN products p ON ci.product_id = p.id
+         LEFT JOIN users u ON p.user_id = u.id
          WHERE ci.cart_id = ? AND p.status = 1
          ORDER BY ci.created_at DESC`,
         [cartId]
@@ -43,15 +45,22 @@ class CartController extends BaseController {
       items.forEach(item => {
         if (item.images) {
           try {
-            item.images = JSON.parse(item.images);
-            // 只取第一张图片
-            item.image = item.images[0] || '';
-            delete item.images;
+            // 尝试解析JSON
+            if (typeof item.images === 'string' && (item.images.trim().startsWith('[') || item.images.trim().startsWith('{'))) {
+              const parsedImages = JSON.parse(item.images);
+              // 只取第一张图片
+              item.product_image = Array.isArray(parsedImages) && parsedImages.length > 0 ? parsedImages[0] : '';
+            } else {
+              // 如果不是JSON格式，直接使用
+              item.product_image = item.images;
+            }
           } catch (e) {
             // 如果JSON解析失败，设置默认值
-            item.image = '';
-            delete item.images;
+            console.error('解析购物车商品图片失败:', e, item.product_id);
+            item.product_image = '';
           }
+        } else {
+          item.product_image = '';
         }
         
         // 计算小计金额

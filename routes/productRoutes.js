@@ -53,6 +53,12 @@ router.put('/:id',
   productController.updateProduct.bind(productController)
 );
 
+// 更新产品状态 - 需要认证
+router.put('/:id/status',
+  auth,
+  productController.updateProductStatus.bind(productController)
+);
+
 // 删除产品 - 需要认证
 router.delete('/:id', auth, productController.deleteProduct.bind(productController));
 

@@ -240,11 +240,24 @@ class ProductController extends BaseController {
       products.forEach(product => {
         if (product.images) {
           try {
-            product.images = JSON.parse(product.images);
+            if (typeof product.images === 'string') {
+              // 只有在确认是JSON字符串时才解析
+              if (product.images.startsWith('[') || product.images.startsWith('{')) {
+                product.images = JSON.parse(product.images);
+              } else {
+                // 如果是单个路径字符串，则包装为数组
+                product.images = [product.images];
+              }
+            } else if (!Array.isArray(product.images)) {
+              product.images = [];
+            }
           } catch (e) {
             // 如果JSON解析失败，设置为空数组
+            console.error(`Error parsing images for product ${product.id}:`, e);
             product.images = [];
           }
+        } else {
+          product.images = [];
         }
       });
       
@@ -297,11 +310,24 @@ class ProductController extends BaseController {
       // 处理JSON字段
       if (product.images) {
         try {
-          product.images = JSON.parse(product.images);
+          if (typeof product.images === 'string') {
+            // 只有在确认是JSON字符串时才解析
+            if (product.images.startsWith('[') || product.images.startsWith('{')) {
+              product.images = JSON.parse(product.images);
+            } else {
+              // 如果是单个路径字符串，则包装为数组
+              product.images = [product.images];
+            }
+          } else if (!Array.isArray(product.images)) {
+            product.images = [];
+          }
         } catch (e) {
           // 如果JSON解析失败，设置为空数组
+          console.error(`Error parsing images for product ${product.id}:`, e);
           product.images = [];
         }
+      } else {
+        product.images = [];
       }
       
       if (product.attributes) {
@@ -328,11 +354,24 @@ class ProductController extends BaseController {
       relatedProducts.forEach(p => {
         if (p.images) {
           try {
-            p.images = JSON.parse(p.images);
+            if (typeof p.images === 'string') {
+              // 只有在确认是JSON字符串时才解析
+              if (p.images.startsWith('[') || p.images.startsWith('{')) {
+                p.images = JSON.parse(p.images);
+              } else {
+                // 如果是单个路径字符串，则包装为数组
+                p.images = [p.images];
+              }
+            } else if (!Array.isArray(p.images)) {
+              p.images = [];
+            }
           } catch (e) {
             // 如果JSON解析失败，设置为空数组
+            console.error(`Error parsing images for related product ${p.id}:`, e);
             p.images = [];
           }
+        } else {
+          p.images = [];
         }
       });
       
@@ -536,7 +575,25 @@ class ProductController extends BaseController {
       }
       
       // 获取产品图片
-      const productImages = JSON.parse(product[0].images || '[]');
+      let productImages = [];
+      try {
+        if (product[0].images) {
+          if (typeof product[0].images === 'string') {
+            // 只有在确认是JSON字符串时才解析
+            if (product[0].images.startsWith('[') || product[0].images.startsWith('{')) {
+              productImages = JSON.parse(product[0].images);
+            } else {
+              // 如果不是JSON格式，则将其包装为数组
+              productImages = [product[0].images];
+            }
+          } else if (Array.isArray(product[0].images)) {
+            productImages = product[0].images;
+          }
+        }
+      } catch (err) {
+        console.error(`Error parsing images for product ${productId}:`, err);
+        productImages = [];
+      }
       
       // 开始事务
       await connection.beginTransaction();
@@ -587,7 +644,25 @@ class ProductController extends BaseController {
       // 处理图片字段
       products.forEach(product => {
         if (product.images) {
-          product.images = JSON.parse(product.images);
+          try {
+            if (typeof product.images === 'string') {
+              // 只有在确认是JSON字符串时才解析
+              if (product.images.startsWith('[') || product.images.startsWith('{')) {
+                product.images = JSON.parse(product.images);
+              } else {
+                // 如果是单个路径字符串，则包装为数组
+                product.images = [product.images];
+              }
+            } else if (!Array.isArray(product.images)) {
+              product.images = [];
+            }
+          } catch (e) {
+            // 如果JSON解析失败，设置为空数组
+            console.error(`Error parsing images for featured product ${product.id}:`, e);
+            product.images = [];
+          }
+        } else {
+          product.images = [];
         }
       });
       
@@ -619,8 +694,12 @@ class ProductController extends BaseController {
       );
       const total = countResult[0].total;
       
-      // 获取产品列表
-      const [products] = await db.execute(
+      // 获取产品列表 - 修复参数类型问题
+      // MySQL prepared statements 要求 LIMIT ? OFFSET ? 的参数必须是数字类型
+      const limitNum = Number(limit);
+      const skipNum = Number(skip);
+      
+      const [products] = await db.query(
         `SELECT 
           p.id, p.title, p.description, p.price, p.original_price, p.stock, p.unit,
           p.location, p.images, p.status, p.view_count, p.sales_count,
@@ -630,13 +709,31 @@ class ProductController extends BaseController {
          WHERE p.user_id = ?
          ORDER BY p.created_at DESC
          LIMIT ? OFFSET ?`,
-        [userId, limit, skip]
+        [userId, limitNum, skipNum]
       );
       
       // 处理图片字段
       products.forEach(product => {
+        // 安全处理images字段
         if (product.images) {
-          product.images = JSON.parse(product.images);
+          try {
+            // 检查是否已经是对象
+            if (typeof product.images === 'string') {
+              // 只有在确认是JSON字符串时才解析
+              if (product.images.startsWith('[') || product.images.startsWith('{')) {
+                product.images = JSON.parse(product.images);
+              } else {
+                // 如果不是JSON格式，则将其包装为数组
+                product.images = [product.images];
+              }
+            }
+          } catch (err) {
+            // 如果解析失败，设置为空数组
+            console.error(`Error parsing images for product ${product.id}:`, err);
+            product.images = [];
+          }
+        } else {
+          product.images = [];
         }
       });
       
@@ -647,6 +744,67 @@ class ProductController extends BaseController {
         success: false,
         message: '获取用户产品列表失败，请重试'
       });
+    }
+  }
+
+  /**
+   * 更新产品状态（上架/下架）
+   */
+  async updateProductStatus(req, res) {
+    const connection = await db.getConnection();
+    
+    try {
+      const productId = req.params.id;
+      const userId = req.userData.userId;
+      const status = parseInt(req.query.status);
+      
+      // 验证状态值
+      if (status !== 0 && status !== 1) {
+        return res.status(400).json({
+          success: false,
+          message: '状态值无效，只能是0(下架)或1(上架)'
+        });
+      }
+      
+      // 检查产品是否存在且属于当前用户
+      const [product] = await connection.execute(
+        'SELECT * FROM products WHERE id = ? AND user_id = ?',
+        [productId, userId]
+      );
+      
+      if (product.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: '无权更新此产品状态'
+        });
+      }
+      
+      // 开始事务
+      await connection.beginTransaction();
+      
+      // 更新产品状态
+      await connection.execute(
+        'UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [status, productId]
+      );
+      
+      // 提交事务
+      await connection.commit();
+      
+      return res.json({
+        success: true,
+        message: status === 1 ? '产品已上架' : '产品已下架'
+      });
+      
+    } catch (error) {
+      await connection.rollback();
+      this.logError(error);
+      return res.status(500).json({
+        success: false,
+        message: '更新产品状态失败，请重试'
+      });
+    } finally {
+      connection.release();
     }
   }
 }
