@@ -184,8 +184,20 @@ class OrderController extends BaseController {
   async getOrderList(req, res) {
     try {
       const userId = req.userData.userId;
-      const { page, limit, skip } = this.getPaginationParams(req);
-      const status = req.query.status ? parseInt(req.query.status) : null;
+      // 获取并确保分页参数是数字
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+      
+      // 处理status参数，确保它是数字或null
+      let status = null;
+      if (req.query.status !== undefined && req.query.status !== '') {
+        const parsedStatus = parseInt(req.query.status);
+        // 验证status是否在有效范围内：0-5
+        if (!isNaN(parsedStatus) && parsedStatus >= 0 && parsedStatus <= 5) {
+          status = parsedStatus;
+        }
+      }
       
       // 构建查询条件
       let whereClause = 'WHERE o.user_id = ?';
@@ -203,9 +215,9 @@ class OrderController extends BaseController {
       );
       const total = countResult[0].total;
       
-      // 获取订单列表
-      const [orders] = await db.execute(
-        `SELECT 
+      // 获取订单列表 - 直接将LIMIT和OFFSET嵌入SQL语句
+      const sql = `
+        SELECT 
           o.id, o.order_no, o.total_amount, o.status, 
           o.contact_name, o.contact_phone, o.address,
           o.payment_method, o.payment_time, o.created_at,
@@ -213,9 +225,9 @@ class OrderController extends BaseController {
          FROM orders o
          ${whereClause}
          ORDER BY o.created_at DESC
-         LIMIT ? OFFSET ?`,
-        [...params, limit, skip]
-      );
+         LIMIT ${limit} OFFSET ${skip}`;
+      
+      const [orders] = await db.query(sql, params);
       
       // 获取每个订单的商品信息
       for (const order of orders) {
@@ -235,7 +247,20 @@ class OrderController extends BaseController {
         order.status_text = this.getOrderStatusText(order.status);
       }
       
-      return this.paginate(res, orders, total, page, limit);
+      // 直接构建响应，不使用paginate方法
+      const totalPages = Math.ceil(total / limit);
+      
+      return res.status(200).json({
+        code: 200,
+        data: {
+          orders,
+          total,
+          page,
+          limit,
+          totalPages
+        },
+        message: '获取订单列表成功'
+      });
     } catch (error) {
       this.logError(error);
       return res.status(500).json({
@@ -251,7 +276,15 @@ class OrderController extends BaseController {
   async getOrderDetail(req, res) {
     try {
       const userId = req.userData.userId;
-      const orderId = req.params.orderId;
+      const orderId = parseInt(req.params.orderId);
+      
+      // 验证orderId是否有效
+      if (isNaN(orderId) || orderId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: '无效的订单ID'
+        });
+      }
       
       // 获取订单信息
       const [orders] = await db.execute(
@@ -308,7 +341,15 @@ class OrderController extends BaseController {
     
     try {
       const userId = req.userData.userId;
-      const orderId = req.params.orderId;
+      const orderId = parseInt(req.params.orderId);
+      
+      // 验证orderId是否有效
+      if (isNaN(orderId) || orderId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: '无效的订单ID'
+        });
+      }
       
       // 开始事务
       await connection.beginTransaction();
@@ -344,6 +385,9 @@ class OrderController extends BaseController {
       
       // 更新商品库存
       for (const item of items) {
+        const productId = Number(item.product_id);
+        const quantity = Number(item.quantity);
+        
         await connection.execute(
           `UPDATE products 
            SET 
@@ -351,7 +395,7 @@ class OrderController extends BaseController {
             sales_count = sales_count - ?,
             updated_at = CURRENT_TIMESTAMP
            WHERE id = ?`,
-          [item.quantity, item.quantity, item.product_id]
+          [quantity, quantity, productId]
         );
       }
       
@@ -388,7 +432,15 @@ class OrderController extends BaseController {
     
     try {
       const userId = req.userData.userId;
-      const orderId = req.params.orderId;
+      const orderId = parseInt(req.params.orderId);
+      
+      // 验证orderId是否有效
+      if (isNaN(orderId) || orderId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: '无效的订单ID'
+        });
+      }
       
       // 开始事务
       await connection.beginTransaction();
@@ -449,8 +501,23 @@ class OrderController extends BaseController {
     
     try {
       const userId = req.userData.userId;
-      const orderId = req.params.orderId;
-      const { payment_method } = req.body;
+      const orderId = parseInt(req.params.orderId);
+      const payment_method = parseInt(req.body.payment_method);
+      
+      // 验证参数
+      if (isNaN(orderId) || orderId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: '无效的订单ID'
+        });
+      }
+      
+      if (isNaN(payment_method) || payment_method < 1 || payment_method > 3) {
+        return res.status(400).json({
+          success: false,
+          message: '无效的支付方式'
+        });
+      }
       
       // 开始事务
       await connection.beginTransaction();
@@ -531,25 +598,28 @@ class OrderController extends BaseController {
       };
       
       stats.forEach(item => {
-        switch (item.status) {
+        const status = Number(item.status);
+        const count = Number(item.count);
+        
+        switch (status) {
           case 0:
-            result.pending_payment = item.count;
+            result.pending_payment = count;
             break;
           case 1:
-            result.pending_shipment = item.count;
+            result.pending_shipment = count;
             break;
           case 2:
-            result.pending_receipt = item.count;
+            result.pending_receipt = count;
             break;
           case 3:
-            result.completed = item.count;
+            result.completed = count;
             break;
           case 4:
-            result.cancelled = item.count;
+            result.cancelled = count;
             break;
         }
         
-        result.total += item.count;
+        result.total += count;
       });
       
       return this.success(res, result);

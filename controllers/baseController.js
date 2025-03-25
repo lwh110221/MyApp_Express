@@ -27,7 +27,17 @@ class BaseController {
 
   // 分页响应
   paginate(res, data, total, page, limit) {
-    ResponseUtil.page(res, { list: data, total, page, pageSize: limit });
+    // 确保数据类型正确
+    const validPage = Number(page) || 1;
+    const validLimit = Number(limit) || 10;
+    const totalPages = Math.ceil(Number(total) / validLimit);
+    
+    ResponseUtil.page(res, {
+      list: data,
+      total: Number(total),
+      page: validPage,
+      pageSize: validLimit
+    });
   }
 
   // 错误响应
@@ -86,10 +96,23 @@ class BaseController {
 
   // 获取分页参数
   getPaginationParams(req) {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
+    // 确保page是正整数
+    let page = parseInt(req.query.page, 10);
+    if (isNaN(page) || page < 1) {
+      page = 1;
+    }
+    
+    // 确保limit是正整数且在合理范围内
+    let limit = parseInt(req.query.limit, 10);
+    if (isNaN(limit) || limit < 1) {
+      limit = 10;
+    } else if (limit > 100) {
+      limit = 100; // 设置上限，防止请求过大数据量
+    }
+    
+    // 计算偏移量
     const skip = (page - 1) * limit;
-
+    
     return { page, limit, skip };
   }
 
