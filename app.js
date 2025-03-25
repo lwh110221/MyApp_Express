@@ -21,6 +21,9 @@ const helpManageRoutes = require('./routes/admin/helpManageRoutes');
 const communityRoutes = require('./routes/communityRoutes');
 const communityManageRoutes = require('./routes/admin/communityManageRoutes');
 const logRoutes = require('./routes/logRoutes');
+const productRoutes = require('./routes/productRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const startFileCleanupTask = require('./tasks/fileCleanupTask');
 
 const app = express();
@@ -126,6 +129,9 @@ app.use('/api/moments', momentRoutes);
 app.use('/api/help', helpRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/log', logRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
 
 // 管理员 API 路由
 app.use('/api/admin', adminRoutes);

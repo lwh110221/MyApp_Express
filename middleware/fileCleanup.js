@@ -11,7 +11,7 @@ const { BusinessError } = require('../utils/errors');
 const createFileCleanupMiddleware = (options = {}) => {
   const {
     uploadPath = 'public/uploads',  // 上传根目录
-    subDirs = ['avatars', 'moments', 'news']  // 子目录列表
+    subDirs = ['avatars', 'moments', 'news', 'help', 'community', 'products']  // 子目录列表
   } = options;
 
   /**
