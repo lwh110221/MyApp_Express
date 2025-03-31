@@ -6,6 +6,7 @@ const session = require('express-session');
 const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
 
 const userRoutes = require('./routes/userRoutes');
 const momentRoutes = require('./routes/momentRoutes');
@@ -24,9 +25,12 @@ const logRoutes = require('./routes/logRoutes');
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const socketService = require('./utils/socketService');
 const startFileCleanupTask = require('./tasks/fileCleanupTask');
 
 const app = express();
+const server = http.createServer(app);
 const port = process.env.PORT || 3000;
 
 // 安全性设置
@@ -38,7 +42,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       imgSrc: ["'self'", 'data:', 'blob:', '*'],
-      connectSrc: ["'self'", 'http://localhost:*'] // 允许所有本地端口
+      connectSrc: ["'self'", 'http://localhost:*', 'ws://localhost:*', 'wss://localhost:*'] // 允许WebSocket连接
     }
   }
 }));
@@ -132,6 +136,7 @@ app.use('/api/log', logRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/chat', chatRoutes);
 
 // 管理员 API 路由
 app.use('/api/admin', adminRoutes);
@@ -152,13 +157,16 @@ app.use(loggerMiddleware);
 // 优雅关闭
 process.on('SIGTERM', () => {
   console.log('收到 SIGTERM 信号，准备关闭服务器');
-  app.close(() => {
+  server.close(() => {
     console.log('服务器已关闭');
     process.exit(0);
   });
 });
 
-app.listen(port, () => {
+// 初始化Socket.io服务
+socketService.initialize(server);
+
+server.listen(port, () => {
   console.log(`服务器运行在 http://localhost:${port}`);
   // 启动文件清理定时任务
   startFileCleanupTask();

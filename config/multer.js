@@ -16,6 +16,8 @@ const storage = multer.diskStorage({
       uploadType = 'community';
     } else if (req.originalUrl.includes('/products')) {
       uploadType = 'products';
+    } else if (req.originalUrl.includes('/chat')) {
+      uploadType = 'chat';
     }
     cb(null, `public/uploads/${uploadType}`);
   },
@@ -32,6 +34,8 @@ const storage = multer.diskStorage({
       fileType = 'community';
     } else if (req.originalUrl.includes('/products')) {
       fileType = 'product';
+    } else if (req.originalUrl.includes('/chat')) {
+      fileType = 'chat';
     }
     cb(null, `${fileType}-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
