@@ -1,6 +1,6 @@
 const pool = require('../../config/database');
 const bcrypt = require('bcryptjs');
-const { successResponse, errorResponse } = require('../../utils/responseUtil');
+const ResponseUtil = require('../../utils/responseUtil');
 
 class AdminManageController {
     // 获取管理员列表
@@ -43,7 +43,7 @@ class AdminManageController {
                 [...params, parseInt(limit), offset]
             );
 
-            return successResponse(res, {
+            return ResponseUtil.success(res, {
                 items: admins.map(admin => ({
                     ...admin,
                     roles: admin.roles ? admin.roles.split(',') : []
@@ -56,7 +56,24 @@ class AdminManageController {
             });
         } catch (error) {
             console.error('Get admin list error:', error);
-            return errorResponse(res, '获取管理员列表失败');
+            return ResponseUtil.error(res, '获取管理员列表失败');
+        }
+    }
+
+    // 获取角色列表
+    async getRoleList(req, res) {
+        try {
+            const [roles] = await pool.query(
+                `SELECT id, name, code, description, status 
+                FROM roles 
+                WHERE status = 1
+                ORDER BY id ASC`
+            );
+            
+            return ResponseUtil.success(res, roles);
+        } catch (error) {
+            console.error('Get role list error:', error);
+            return ResponseUtil.error(res, '获取角色列表失败');
         }
     }
 
@@ -72,7 +89,7 @@ class AdminManageController {
             );
 
             if (existing.length > 0) {
-                return errorResponse(res, '用户名或邮箱已存在', 400);
+                return ResponseUtil.error(res, '用户名或邮箱已存在', 400);
             }
 
             // 开启事务
@@ -97,7 +114,7 @@ class AdminManageController {
                 }
 
                 await connection.commit();
-                return successResponse(res, null, '管理员创建成功', 201);
+                return ResponseUtil.success(res, null, '管理员创建成功', 201);
             } catch (error) {
                 await connection.rollback();
                 throw error;
@@ -106,7 +123,7 @@ class AdminManageController {
             }
         } catch (error) {
             console.error('Create admin error:', error);
-            return errorResponse(res, '创建管理员失败');
+            return ResponseUtil.error(res, '创建管理员失败');
         }
     }
 
@@ -118,7 +135,7 @@ class AdminManageController {
 
             // 不允许自己禁用自己
             if (parseInt(adminId) === req.admin.id) {
-                return errorResponse(res, '不能修改自己的状态', 400);
+                return ResponseUtil.error(res, '不能修改自己的状态', 400);
             }
 
             const statusValue = status ? 1 : 0;
@@ -128,13 +145,13 @@ class AdminManageController {
             );
 
             if (result.affectedRows === 0) {
-                return errorResponse(res, '管理员不存在', 404);
+                return ResponseUtil.error(res, '管理员不存在', 404);
             }
 
-            return successResponse(res, null, `管理员${statusValue === 1 ? '启用' : '禁用'}成功`);
+            return ResponseUtil.success(res, null, `管理员${statusValue === 1 ? '启用' : '禁用'}成功`);
         } catch (error) {
             console.error('Toggle admin status error:', error);
-            return errorResponse(res, '操作失败');
+            return ResponseUtil.error(res, '操作失败');
         }
     }
 
@@ -146,7 +163,7 @@ class AdminManageController {
 
             // 不允许修改自己的角色
             if (parseInt(adminId) === req.admin.id) {
-                return errorResponse(res, '不能修改自己的角色', 400);
+                return ResponseUtil.error(res, '不能修改自己的角色', 400);
             }
 
             // 开启事务
@@ -170,7 +187,7 @@ class AdminManageController {
                 }
 
                 await connection.commit();
-                return successResponse(res, null, '角色更新成功');
+                return ResponseUtil.success(res, null, '角色更新成功');
             } catch (error) {
                 await connection.rollback();
                 throw error;
@@ -179,7 +196,7 @@ class AdminManageController {
             }
         } catch (error) {
             console.error('Update admin roles error:', error);
-            return errorResponse(res, '更新角色失败');
+            return ResponseUtil.error(res, '更新角色失败');
         }
     }
 
@@ -190,7 +207,7 @@ class AdminManageController {
 
             // 不允许删除自己
             if (parseInt(adminId) === req.admin.id) {
-                return errorResponse(res, '不能删除自己的账号', 400);
+                return ResponseUtil.error(res, '不能删除自己的账号', 400);
             }
 
             // 开启事务
@@ -212,11 +229,11 @@ class AdminManageController {
 
                 if (result.affectedRows === 0) {
                     await connection.rollback();
-                    return errorResponse(res, '管理员不存在', 404);
+                    return ResponseUtil.error(res, '管理员不存在', 404);
                 }
 
                 await connection.commit();
-                return successResponse(res, null, '管理员删除成功');
+                return ResponseUtil.success(res, null, '管理员删除成功');
             } catch (error) {
                 await connection.rollback();
                 throw error;
@@ -225,7 +242,7 @@ class AdminManageController {
             }
         } catch (error) {
             console.error('Delete admin error:', error);
-            return errorResponse(res, '删除管理员失败');
+            return ResponseUtil.error(res, '删除管理员失败');
         }
     }
 }

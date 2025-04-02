@@ -17,8 +17,8 @@ const IdentityTypes = {
     needCertification: true,
     validityDays: 365,
     certificationRequirements: {
-      requiredFields: ['idCard', 'landCertificate'],
-      description: '需要提供身份证和土地证明'
+      requiredFields: ['idCard'],
+      description: '需要提供身份证'
     }
   },
   

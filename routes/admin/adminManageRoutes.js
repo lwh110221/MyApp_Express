@@ -74,4 +74,10 @@ router.delete('/:adminId',
     adminManageController.deleteAdmin
 );
 
+// 获取角色列表
+router.get('/roles',
+    checkPermission('admin:list'),
+    adminManageController.getRoleList
+);
+
 module.exports = router; 
