@@ -633,6 +633,288 @@ class OrderController extends BaseController {
   }
 
   /**
+   * 卖家发货
+   */
+  async shipOrder(req, res) {
+    const connection = await db.getConnection();
+    
+    try {
+      const userId = req.userData.userId;
+      const orderId = parseInt(req.params.orderId);
+      const { tracking_number, shipping_company } = req.body;
+      
+      // 验证orderId是否有效
+      if (isNaN(orderId) || orderId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: '无效的订单ID'
+        });
+      }
+      
+      // 开始事务
+      await connection.beginTransaction();
+      
+      // 首先获取订单信息
+      const [orders] = await connection.execute(
+        'SELECT id, status FROM orders WHERE id = ?',
+        [orderId]
+      );
+      
+      if (orders.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({
+          success: false,
+          message: '订单不存在'
+        });
+      }
+      
+      const order = orders[0];
+      
+      // 判断订单状态是否可发货
+      if (order.status !== 1) {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          message: '只有待发货订单可以执行发货操作'
+        });
+      }
+      
+      // 验证卖家身份：检查订单中的商品是否由当前用户发布
+      const [orderItems] = await connection.execute(
+        `SELECT oi.product_id
+         FROM order_items oi
+         JOIN products p ON oi.product_id = p.id
+         WHERE oi.order_id = ? AND p.user_id = ?
+         LIMIT 1`,
+        [orderId, userId]
+      );
+      
+      if (orderItems.length === 0) {
+        await connection.rollback();
+        return res.status(403).json({
+          success: false,
+          message: '您无权操作此订单'
+        });
+      }
+      
+      // 更新订单状态
+      await connection.execute(
+        `UPDATE orders 
+         SET 
+          status = 2, 
+          shipping_time = CURRENT_TIMESTAMP,
+          tracking_number = ?,
+          shipping_company = ?,
+          updated_at = CURRENT_TIMESTAMP 
+         WHERE id = ?`,
+        [tracking_number, shipping_company || null, orderId]
+      );
+      
+      // 提交事务
+      await connection.commit();
+      
+      return res.json({
+        success: true,
+        message: '订单已发货'
+      });
+    } catch (error) {
+      await connection.rollback();
+      this.logError(error);
+      return res.status(500).json({
+        success: false,
+        message: '订单发货失败，请重试'
+      });
+    } finally {
+      connection.release();
+    }
+  }
+
+  /**
+   * 获取卖家订单列表
+   */
+  async getSellerOrders(req, res) {
+    try {
+      const sellerId = req.userData.userId;
+      // 获取并确保分页参数是数字
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+      
+      // 处理status参数，确保它是数字或null
+      let status = null;
+      if (req.query.status !== undefined && req.query.status !== '') {
+        const parsedStatus = parseInt(req.query.status);
+        // 验证status是否在有效范围内：0-5
+        if (!isNaN(parsedStatus) && parsedStatus >= 0 && parsedStatus <= 5) {
+          status = parsedStatus;
+        }
+      }
+      
+      // 构建查询条件
+      let whereClause = 'WHERE p.user_id = ?';
+      let params = [sellerId];
+      
+      if (status !== null) {
+        whereClause += ' AND o.status = ?';
+        params.push(status);
+      }
+      
+      // 获取订单总数 - 找出所有包含卖家商品的订单
+      const countSql = `
+        SELECT COUNT(DISTINCT o.id) as total 
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN products p ON oi.product_id = p.id
+        ${whereClause}`;
+      
+      const [countResult] = await db.execute(countSql, params);
+      const total = countResult[0].total;
+      
+      // 获取订单列表 - 找出所有包含卖家商品的订单
+      const sql = `
+        SELECT DISTINCT
+          o.id, o.order_no, o.total_amount, o.status, 
+          o.contact_name, o.contact_phone, o.address,
+          o.payment_method, o.payment_time, o.created_at,
+          o.shipping_time, o.completion_time
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN products p ON oi.product_id = p.id
+        ${whereClause}
+        ORDER BY o.created_at DESC
+        LIMIT ${limit} OFFSET ${skip}`;
+      
+      const [orders] = await db.query(sql, params);
+      
+      // 获取每个订单中属于卖家的商品信息
+      for (const order of orders) {
+        const [items] = await db.execute(
+          `SELECT 
+            oi.id, oi.product_id, oi.product_title, oi.product_image,
+            oi.price, oi.quantity, oi.total_amount
+           FROM order_items oi
+           JOIN products p ON oi.product_id = p.id
+           WHERE oi.order_id = ? AND p.user_id = ?
+           ORDER BY oi.id ASC`,
+          [order.id, sellerId]
+        );
+        
+        order.items = items;
+        
+        // 计算卖家在此订单中的商品总金额
+        order.seller_total = items.reduce((sum, item) => sum + parseFloat(item.total_amount), 0);
+        
+        // 获取订单状态对应的文本描述
+        order.status_text = this.getOrderStatusText(order.status);
+      }
+      
+      // 构建响应
+      const totalPages = Math.ceil(total / limit);
+      
+      return res.status(200).json({
+        code: 200,
+        data: {
+          orders,
+          total,
+          page,
+          limit,
+          totalPages
+        },
+        message: '获取卖家订单列表成功'
+      });
+    } catch (error) {
+      this.logError(error);
+      return res.status(500).json({
+        success: false,
+        message: '获取卖家订单列表失败，请重试'
+      });
+    }
+  }
+
+  /**
+   * 获取卖家订单详情
+   */
+  async getSellerOrderDetail(req, res) {
+    try {
+      const sellerId = req.userData.userId;
+      const orderId = parseInt(req.params.orderId);
+      
+      // 验证orderId是否有效
+      if (isNaN(orderId) || orderId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: '无效的订单ID'
+        });
+      }
+      
+      // 首先验证卖家是否有权限查看此订单（订单中是否包含卖家的商品）
+      const [hasProduct] = await db.execute(
+        `SELECT COUNT(*) as count
+         FROM order_items oi
+         JOIN products p ON oi.product_id = p.id
+         WHERE oi.order_id = ? AND p.user_id = ?`,
+        [orderId, sellerId]
+      );
+      
+      if (hasProduct[0].count === 0) {
+        return res.status(403).json({
+          success: false,
+          message: '您无权查看此订单'
+        });
+      }
+      
+      // 获取订单信息
+      const [orders] = await db.execute(
+        `SELECT 
+          o.id, o.order_no, o.total_amount, o.status,
+          o.contact_name, o.contact_phone, o.address, o.note,
+          o.payment_method, o.payment_time, o.shipping_time, 
+          o.completion_time, o.created_at, o.updated_at
+         FROM orders o
+         WHERE o.id = ?`,
+        [orderId]
+      );
+      
+      if (orders.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: '订单不存在'
+        });
+      }
+      
+      const order = orders[0];
+      
+      // 获取卖家在此订单中的商品
+      const [items] = await db.execute(
+        `SELECT 
+          oi.id, oi.product_id, oi.product_title, oi.product_image,
+          oi.price, oi.quantity, oi.total_amount
+         FROM order_items oi
+         JOIN products p ON oi.product_id = p.id
+         WHERE oi.order_id = ? AND p.user_id = ?
+         ORDER BY oi.id ASC`,
+        [orderId, sellerId]
+      );
+      
+      order.items = items;
+      
+      // 计算卖家在此订单中的商品总金额
+      order.seller_total = items.reduce((sum, item) => sum + parseFloat(item.total_amount), 0);
+      
+      // 获取订单状态对应的文本描述
+      order.status_text = this.getOrderStatusText(order.status);
+      
+      return this.success(res, order);
+    } catch (error) {
+      this.logError(error);
+      return res.status(500).json({
+        success: false,
+        message: '获取卖家订单详情失败，请重试'
+      });
+    }
+  }
+
+  /**
    * 获取订单状态文本
    */
   getOrderStatusText(status) {

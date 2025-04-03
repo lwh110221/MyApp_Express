@@ -326,16 +326,23 @@ class ProductController extends BaseController {
           console.error(`Error parsing images for product ${product.id}:`, e);
           product.images = [];
         }
-      } else {
-        product.images = [];
       }
       
       if (product.attributes) {
         try {
-          product.attributes = JSON.parse(product.attributes);
+          // 如果attributes已经是对象，直接使用；如果是字符串，尝试解析
+          if (typeof product.attributes === 'string') {
+            product.attributes = JSON.parse(product.attributes);
+          }
+          // 如果解析后不是对象或为null，设置为空对象
+          if (!product.attributes || typeof product.attributes !== 'object') {
+            product.attributes = {};
+          }
         } catch (e) {
-          // 如果JSON解析失败，设置为null
-          product.attributes = null;
+          // 如果JSON解析失败，记录错误但保留原始数据
+          console.error(`Error parsing attributes for product ${product.id}:`, e);
+          // 设置为空对象而不是null
+          product.attributes = {};
         }
       }
       

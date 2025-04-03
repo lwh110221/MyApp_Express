@@ -26,6 +26,24 @@ router.get('/',
   orderController.getOrderList
 );
 
+// 获取卖家订单列表 - 需要认证
+router.get('/seller', 
+  auth,
+  query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
+  query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('每页数量必须在1-50之间'),
+  query('status').optional().isInt({ min: 0, max: 5 }).withMessage('订单状态必须是0-5之间的整数'),
+  validate([]),
+  orderController.getSellerOrders
+);
+
+// 获取卖家订单详情 - 需要认证
+router.get('/seller/:orderId', 
+  auth,
+  param('orderId').isInt().withMessage('订单ID必须是整数'),
+  validate([]),
+  orderController.getSellerOrderDetail
+);
+
 // 获取订单统计 - 需要认证
 router.get('/stats', auth, orderController.getOrderStats);
 
@@ -58,6 +76,16 @@ router.put('/:orderId/confirm',
   param('orderId').isInt().withMessage('订单ID必须是整数'),
   validate([]),
   orderController.confirmReceived
+);
+
+// 卖家发货 - 需要认证
+router.put('/:orderId/ship',
+  auth,
+  param('orderId').isInt().withMessage('订单ID必须是整数'),
+  body('tracking_number').trim().notEmpty().withMessage('物流单号不能为空'),
+  body('shipping_company').optional().trim(),
+  validate([]),
+  orderController.shipOrder
 );
 
 // 支付订单 - 需要认证

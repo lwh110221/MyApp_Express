@@ -586,6 +586,8 @@
         "payment_time": null,
         "created_at": "2023-06-10T12:34:56Z",
         "shipping_time": null,
+        "tracking_number": null,
+        "shipping_company": null,
         "completion_time": null,
         "items": [
           {
@@ -635,9 +637,11 @@
     "payment_method": null,
     "payment_time": null,
     "shipping_time": null,
+    "tracking_number": null,
+    "shipping_company": null,
     "completion_time": null,
     "created_at": "2023-06-10T12:34:56Z",
-    "updated_at": "2023-06-10T12:34:56Z",
+    "updated_at": "2023-06-10T13:10:25Z",
     "items": [
       {
         "id": 150,
@@ -733,5 +737,139 @@
     "total": 9
   },
   "message": "操作成功"
+}
+```
+
+### 获取卖家订单列表
+
+获取当前用户作为卖家的订单列表（包含用户发布的商品的订单）。
+
+- **URL**: `/api/orders/seller`
+- **Method**: `GET`
+- **需要认证**: 是
+
+**请求参数**:
+
+| 参数 | 类型 | 必填 | 描述 |
+|------|------|------|------|
+| page | Number | 否 | 页码，默认为1 |
+| limit | Number | 否 | 每页数量，默认为10 |
+| status | Number | 否 | 订单状态：0(待付款)、1(待发货)、2(已发货)、3(已完成)、4(已取消)、5(已退款) |
+
+**响应示例**:
+
+```json
+{
+  "code": 200,
+  "data": {
+    "orders": [
+      {
+        "id": 100,
+        "order_no": "O20230610123456789",
+        "total_amount": 159.60,
+        "status": 1,
+        "status_text": "待发货",
+        "contact_name": "张三",
+        "contact_phone": "13800138000",
+        "address": "北京市海淀区",
+        "payment_method": 1,
+        "payment_time": "2023-06-10T13:10:25Z",
+        "created_at": "2023-06-10T12:34:56Z",
+        "shipping_time": null,
+        "tracking_number": null,
+        "shipping_company": null,
+        "completion_time": null,
+        "items": [
+          {
+            "id": 150,
+            "product_id": 5,
+            "product_title": "有机草莓",
+            "product_image": "/uploads/products/strawberry1.jpg",
+            "price": 49.8,
+            "quantity": 2,
+            "total_amount": 99.60
+          }
+        ],
+        "seller_total": 99.60
+      }
+    ],
+    "total": 3,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  },
+  "message": "获取卖家订单列表成功"
+}
+```
+
+### 获取卖家订单详情
+
+获取卖家身份下的单个订单详情（只包含当前用户发布的商品）。
+
+- **URL**: `/api/orders/seller/:orderId`
+- **Method**: `GET`
+- **需要认证**: 是
+
+**响应示例**:
+
+```json
+{
+  "code": 200,
+  "data": {
+    "id": 100,
+    "order_no": "O20230610123456789",
+    "total_amount": 159.60,
+    "status": 1,
+    "status_text": "待发货",
+    "contact_name": "张三",
+    "contact_phone": "13800138000",
+    "address": "北京市海淀区",
+    "note": "请尽快发货",
+    "payment_method": 1,
+    "payment_time": "2023-06-10T13:10:25Z",
+    "shipping_time": null,
+    "tracking_number": null,
+    "shipping_company": null,
+    "completion_time": null,
+    "created_at": "2023-06-10T12:34:56Z",
+    "updated_at": "2023-06-10T13:10:25Z",
+    "items": [
+      {
+        "id": 150,
+        "product_id": 5,
+        "product_title": "有机草莓",
+        "product_image": "/uploads/products/strawberry1.jpg",
+        "price": 49.8,
+        "quantity": 2,
+        "total_amount": 99.60
+      }
+    ],
+    "seller_total": 99.60
+  },
+  "message": "操作成功"
+}
+```
+
+### 卖家发货
+
+卖家对已付款的订单进行发货操作。
+
+- **URL**: `/api/orders/:orderId/ship`
+- **Method**: `PUT`
+- **需要认证**: 是
+
+**请求参数**:
+
+| 参数 | 类型 | 必填 | 描述 |
+|------|------|------|------|
+| tracking_number | String | 是 | 物流单号 |
+| shipping_company | String | 否 | 物流公司名称 |
+
+**响应示例**:
+
+```json
+{
+  "success": true,
+  "message": "订单已发货"
 }
 ```
