@@ -29,6 +29,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const socketService = require('./utils/socketService');
 const startFileCleanupTask = require('./tasks/fileCleanupTask');
 const passwordRoutes = require('./routes/passwordRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -43,7 +44,8 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       imgSrc: ["'self'", 'data:', 'blob:', '*'],
-      connectSrc: ["'self'", 'http://localhost:*', 'ws://localhost:*', 'wss://localhost:*'] // 允许WebSocket连接
+      // connectSrc: ["'self'", 'http://localhost:*', 'ws://localhost:*', 'wss://localhost:*', 'wss://spark-api.xf-yun.com/*']
+      connectSrc: ["'self'", '*']
     }
   }
 }));
@@ -69,7 +71,8 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 15, // 15分钟过期
     httpOnly: true,
-    sameSite: 'strict'
+    // sameSite: 'strict'
+    sameSite: 'none'
   }
 }));
 
@@ -78,19 +81,21 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',');
 app.use(cors({
   origin: function(origin, callback) {
     // 允许没有origin的请求（比如同源请求）
-    if (!origin) return callback(null, true);
+    // if (!origin) return callback(null, true);
     
     // 允许所有本地请求
-    if (origin.startsWith('http://localhost:')) {
-      return callback(null, true);
-    }
+    // if (origin.startsWith('http://localhost:')) {
+    //   return callback(null, true);
+    // }
     
     // 检查其他允许的域名
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('不允许的跨域请求'));
-    }
+    // if (allowedOrigins.indexOf(origin) !== -1) {
+    //   callback(null, true);
+    // } else {
+    //   callback(new Error('不允许的跨域请求'));
+    // }
+    // 允许所有源访问
+    return callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -121,7 +126,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
   etag: true,
   setHeaders: function (res, path, stat) {
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.set('Access-Control-Allow-Origin', 'http://localhost:*'); // 允许所有本地端口
+    // res.set('Access-Control-Allow-Origin', 'http://localhost:*');
+    res.set('Access-Control-Allow-Origin', '*'); // 允许所有源访问
   }
 }));
 
@@ -139,6 +145,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/password', passwordRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 管理员 API 路由
 app.use('/api/admin', adminRoutes);

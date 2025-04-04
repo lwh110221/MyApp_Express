@@ -18,7 +18,8 @@ class SocketService {
   initialize(server) {
     this.io = socketIO(server, {
       cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        // origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        origin: "*", // 允许所有源访问
         methods: ['GET', 'POST'],
         credentials: true
       }
