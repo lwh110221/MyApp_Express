@@ -72,6 +72,90 @@ class IdentityManageController extends BaseController {
       ResponseUtil.error(res, '获取身份统计信息失败', 500);
     }
   }
+
+  /**
+   * 获取所有身份类型配置
+   */
+  async getIdentityTypes(req, res) {
+    try {
+      // 检查是否有管理身份类型的权限
+      if (!req.admin || !req.admin.permissions.includes('identity:type:manage')) {
+        return ResponseUtil.error(res, '没有管理身份类型的权限', 403);
+      }
+
+      const types = await identityService.getAllIdentityTypes();
+      ResponseUtil.success(res, types, '获取身份类型配置成功');
+    } catch (error) {
+      console.error('获取身份类型配置错误:', error);
+      ResponseUtil.error(res, '获取身份类型配置失败', 500);
+    }
+  }
+
+  /**
+   * 创建新的身份类型
+   */
+  async createIdentityType(req, res) {
+    try {
+      // 检查是否有管理身份类型的权限
+      if (!req.admin || !req.admin.permissions.includes('identity:type:manage')) {
+        return ResponseUtil.error(res, '没有管理身份类型的权限', 403);
+      }
+
+      const typeData = req.body;
+      
+      // 验证必填字段
+      if (!typeData.code || !typeData.name) {
+        return ResponseUtil.error(res, '身份类型代码和名称为必填项', 400);
+      }
+
+      const result = await identityService.createIdentityType(typeData);
+      ResponseUtil.success(res, result, '创建身份类型成功');
+    } catch (error) {
+      console.error('创建身份类型错误:', error);
+      ResponseUtil.error(res, error.message || '创建身份类型失败', 500);
+    }
+  }
+
+  /**
+   * 更新身份类型配置
+   */
+  async updateIdentityType(req, res) {
+    try {
+      // 检查是否有管理身份类型的权限
+      if (!req.admin || !req.admin.permissions.includes('identity:type:manage')) {
+        return ResponseUtil.error(res, '没有管理身份类型的权限', 403);
+      }
+
+      const { code } = req.params;
+      const typeData = req.body;
+      
+      const result = await identityService.updateIdentityType(code, typeData);
+      ResponseUtil.success(res, result, '更新身份类型成功');
+    } catch (error) {
+      console.error('更新身份类型错误:', error);
+      ResponseUtil.error(res, error.message || '更新身份类型失败', 500);
+    }
+  }
+
+  /**
+   * 删除身份类型
+   */
+  async deleteIdentityType(req, res) {
+    try {
+      // 检查是否有管理身份类型的权限
+      if (!req.admin || !req.admin.permissions.includes('identity:type:manage')) {
+        return ResponseUtil.error(res, '没有管理身份类型的权限', 403);
+      }
+
+      const { code } = req.params;
+      
+      const result = await identityService.deleteIdentityType(code);
+      ResponseUtil.success(res, result, '删除身份类型成功');
+    } catch (error) {
+      console.error('删除身份类型错误:', error);
+      ResponseUtil.error(res, error.message || '删除身份类型失败', 500);
+    }
+  }
 }
 
 module.exports = new IdentityManageController(); 

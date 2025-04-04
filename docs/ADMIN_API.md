@@ -1313,6 +1313,187 @@
 }
 ```
 
+### 6.4 身份类型管理
+
+#### 6.4.1 获取所有身份类型
+
+##### 请求信息
+- **接口**: `/identities/types`
+- **方法**: `GET`
+- **需要认证**: 是
+- **所需权限**: `identity:type:manage`
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "获取身份类型配置成功",
+    "data": [
+        {
+            "code": "NORMAL",
+            "name": "普通用户",
+            "isDefault": true,
+            "needCertification": false
+        },
+        {
+            "code": "FARMER",
+            "name": "农户",
+            "needCertification": true,
+            "validityDays": 365,
+            "certificationRequirements": {
+                "requiredFields": ["idCard"],
+                "description": "需要提供身份证"
+            }
+        },
+        {
+            "code": "DEALER",
+            "name": "经销商",
+            "needCertification": true,
+            "validityDays": 365,
+            "certificationRequirements": {
+                "requiredFields": ["businessLicense", "foodPermit"],
+                "description": "需要提供营业执照和食品经营许可证"
+            }
+        }
+    ]
+}
+```
+
+#### 6.4.2 创建身份类型
+
+##### 请求信息
+- **接口**: `/identities/types`
+- **方法**: `POST`
+- **需要认证**: 是
+- **所需权限**: `identity:type:manage`
+- **Content-Type**: `application/json`
+
+##### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| code | string | 是 | 身份类型代码 | 唯一标识符，大写字母 |
+| name | string | 是 | 身份类型名称 | 不能为空 |
+| isDefault | boolean | 否 | 是否为默认身份 | 默认为false |
+| needCertification | boolean | 否 | 是否需要认证 | 默认为false |
+| validityDays | number | 否 | 认证有效期(天) | 当needCertification为true时有效 |
+| requiredFields | string[] | 否 | 认证所需字段 | 当needCertification为true时有效 |
+| description | string | 否 | 认证要求描述 | 当needCertification为true时有效 |
+
+##### 请求示例
+```json
+{
+    "code": "WHOLESALER",
+    "name": "批发商",
+    "isDefault": false,
+    "needCertification": true,
+    "validityDays": 365,
+    "requiredFields": ["businessLicense", "taxCertificate"],
+    "description": "需要提供营业执照和税务登记证"
+}
+```
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "创建身份类型成功",
+    "data": {
+        "code": "WHOLESALER",
+        "name": "批发商",
+        "isDefault": false,
+        "needCertification": true,
+        "validityDays": 365,
+        "certificationRequirements": {
+            "requiredFields": ["businessLicense", "taxCertificate"],
+            "description": "需要提供营业执照和税务登记证"
+        }
+    }
+}
+```
+
+#### 6.4.3 更新身份类型
+
+##### 请求信息
+- **接口**: `/identities/types/:code`
+- **方法**: `PUT`
+- **需要认证**: 是
+- **所需权限**: `identity:type:manage`
+- **Content-Type**: `application/json`
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| code | string | 身份类型代码 |
+
+##### 请求参数
+| 参数名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| name | string | 否 | 身份类型名称 | - |
+| isDefault | boolean | 否 | 是否为默认身份 | - |
+| needCertification | boolean | 否 | 是否需要认证 | - |
+| validityDays | number | 否 | 认证有效期(天) | 当needCertification为true时有效 |
+| requiredFields | string[] | 否 | 认证所需字段 | 当needCertification为true时有效 |
+| description | string | 否 | 认证要求描述 | 当needCertification为true时有效 |
+
+##### 请求示例
+```json
+{
+    "name": "批发商（新）",
+    "validityDays": 730,
+    "requiredFields": ["businessLicense", "taxCertificate", "warehousePermit"],
+    "description": "需要提供营业执照、税务登记证和仓储许可证"
+}
+```
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "更新身份类型成功",
+    "data": {
+        "code": "WHOLESALER",
+        "name": "批发商（新）",
+        "isDefault": false,
+        "needCertification": true,
+        "validityDays": 730,
+        "certificationRequirements": {
+            "requiredFields": ["businessLicense", "taxCertificate", "warehousePermit"],
+            "description": "需要提供营业执照、税务登记证和仓储许可证"
+        }
+    }
+}
+```
+
+#### 6.4.4 删除身份类型
+
+##### 请求信息
+- **接口**: `/identities/types/:code`
+- **方法**: `DELETE`
+- **需要认证**: 是
+- **所需权限**: `identity:type:manage`
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| code | string | 身份类型代码 |
+
+##### 响应示例
+```json
+{
+    "code": 200,
+    "message": "删除身份类型成功",
+    "data": {
+        "success": true,
+        "message": "身份类型 WHOLESALER 已成功删除"
+    }
+}
+```
+
+##### 注意事项
+1. 默认身份类型不能删除
+2. 已有用户使用的身份类型不能删除
+3. 有待审核的认证申请的身份类型不能删除
+
 ## 7. 社区管理模块
 
 ### 7.1 获取帖子列表

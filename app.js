@@ -28,6 +28,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const socketService = require('./utils/socketService');
 const startFileCleanupTask = require('./tasks/fileCleanupTask');
+const passwordRoutes = require('./routes/passwordRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -137,11 +138,25 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/password', passwordRoutes);
 
 // 管理员 API 路由
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/help', helpManageRoutes);
 app.use('/api/admin/community', communityManageRoutes);
+
+// 处理没有/api前缀的请求（临时兼容）
+app.use('/users', (req, res, next) => {
+  // 重定向到带有/api前缀的路由
+  req.url = '/api/users' + req.url;
+  app.handle(req, res);
+});
+
+app.use('/password', (req, res, next) => {
+  // 重定向到带有/api前缀的路由
+  req.url = '/api/password' + req.url;
+  app.handle(req, res);
+});
 
 // 404 处理
 app.use((req, res) => {

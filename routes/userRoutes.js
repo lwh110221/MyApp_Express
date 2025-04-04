@@ -1,15 +1,34 @@
 const express = require('express');
 const router = express.Router();
+const { param, query, body } = require('express-validator');
+const jwt = require('jsonwebtoken');
+const auth = require('../middleware/auth');
 const userController = require('../controllers/userController');
 const captchaController = require('../controllers/captchaController');
-const auth = require('../middleware/auth');
 const upload = require('../config/multer');
 const { validate } = require('../middleware/validator');
-const { param, query } = require('express-validator');
-const jwt = require('jsonwebtoken');
 
-// 用户注册
-router.post('/register', captchaController.verifyCaptcha, userController.register);
+// 发送邮箱验证码（用于注册）
+router.post('/send-verification-code', [
+  body('email').isEmail().withMessage('请提供有效的邮箱地址'),
+  validate([])
+], userController.sendEmailVerificationCode);
+
+// 注册新用户
+router.post('/register', [
+  body('username').notEmpty().withMessage('用户名不能为空'),
+  body('password').isLength({ min: 6 }).withMessage('密码至少6个字符'),
+  body('email').isEmail().withMessage('请提供有效的邮箱地址'),
+  // 允许使用verificationCode或captcha
+  body(['verificationCode', 'captcha']).custom((value, { req }) => {
+    if (!req.body.verificationCode && !req.body.captcha) {
+      throw new Error('验证码不能为空');
+    }
+    return true;
+  }),
+  body('phone').optional(),
+  validate([])
+], userController.register);
 
 // 用户登录
 router.post('/login', userController.login);
@@ -33,6 +52,31 @@ router.put('/password',
   auth, 
   captchaController.verifyCaptcha, 
   userController.changePassword
+);
+
+// 忘记密码 - 发送重置邮件
+router.post(
+  '/forgot-password',
+  body('email').isEmail().withMessage('请提供有效的邮箱地址'),
+  validate([]),
+  userController.forgotPassword
+);
+
+// 验证重置密码令牌
+router.get(
+  '/reset-password/:token/validate',
+  param('token').isString().withMessage('无效的重置令牌'),
+  validate([]),
+  userController.validateResetToken
+);
+
+// 重置密码
+router.post(
+  '/reset-password',
+  body('token').isString().withMessage('无效的重置令牌'),
+  body('password').isLength({ min: 6 }).withMessage('密码长度至少6个字符'),
+  validate([]),
+  userController.resetPassword
 );
 
 // 获取用户积分（需要认证）
@@ -104,5 +148,10 @@ router.get('/:userId/followers',
   validate([]),
   userController.getFollowersList
 );
+
+// 临时调试路由 - 仅供开发环境使用
+if (process.env.NODE_ENV === 'development') {
+  router.get('/debug/check-code', userController.debug_checkCode);
+}
 
 module.exports = router; 

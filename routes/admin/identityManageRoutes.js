@@ -11,4 +11,10 @@ router.put('/certifications/:certificationId/review', identityManageController.r
 // 获取身份统计信息
 router.get('/stats', identityManageController.getIdentityStats.bind(identityManageController));
 
+// 身份类型管理接口
+router.get('/types', identityManageController.getIdentityTypes.bind(identityManageController));
+router.post('/types', identityManageController.createIdentityType.bind(identityManageController));
+router.put('/types/:code', identityManageController.updateIdentityType.bind(identityManageController));
+router.delete('/types/:code', identityManageController.deleteIdentityType.bind(identityManageController));
+
 module.exports = router; 
