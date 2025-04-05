@@ -2082,3 +2082,230 @@ GET /moments/user/:userId?page=1&limit=10
   }
 }
 ```
+
+## 7. AI农业知识助手API
+
+### 7.1 会话管理相关接口
+
+#### 7.1.1 创建新会话
+
+##### 请求信息
+- **接口**: `/ai/sessions`
+- **方法**: `POST`
+- **需要认证**: 是
+
+##### 响应示例
+```json
+{
+  "code": 200,
+  "message": "会话创建成功",
+  "data": {
+    "sessionId": "1_a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6"
+  }
+}
+```
+
+#### 7.1.2 获取用户会话列表
+
+##### 请求信息
+- **接口**: `/ai/sessions`
+- **方法**: `GET`
+- **需要认证**: 是
+
+##### 响应示例
+```json
+{
+  "code": 200,
+  "message": "获取会话列表成功",
+  "data": {
+    "sessions": [
+      {
+        "sessionId": "1_a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+        "createdAt": "2024-04-10T08:30:00.000Z",
+        "updatedAt": "2024-04-10T09:15:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+#### 7.1.3 删除会话
+
+##### 请求信息
+- **接口**: `/ai/sessions/:sessionId`
+- **方法**: `DELETE`
+- **需要认证**: 是
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| sessionId | string | 会话ID |
+
+##### 响应示例
+```json
+{
+  "code": 200,
+  "message": "会话已删除"
+}
+```
+
+#### 7.1.4 清空会话消息
+
+##### 请求信息
+- **接口**: `/ai/sessions/:sessionId/clear`
+- **方法**: `POST`
+- **需要认证**: 是
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| sessionId | string | 会话ID |
+
+##### 响应示例
+```json
+{
+  "code": 200,
+  "message": "会话消息已清空"
+}
+```
+
+#### 7.1.5 获取会话消息
+
+##### 请求信息
+- **接口**: `/ai/sessions/:sessionId/messages`
+- **方法**: `GET`
+- **需要认证**: 是
+
+##### 路径参数
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| sessionId | string | 会话ID |
+
+##### 响应示例
+```json
+{
+  "code": 200,
+  "message": "获取会话消息成功",
+  "data": {
+    "sessionId": "1_a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+    "messages": [
+      {
+        "role": "user",
+        "content": "水稻种植有哪些注意事项？"
+      },
+      {
+        "role": "assistant",
+        "content": "水稻种植的主要注意事项包括以下几点：\n\n1. 选择适合的品种：根据当地气候和土壤条件选择适合的水稻品种。\n\n2. 合理整地：确保田地平整，有利于灌溉和排水。\n\n..."
+      }
+    ]
+  }
+}
+```
+
+### 7.2 获取AI助手回复
+
+#### 请求信息
+- **接口**: `/ai/chat`
+- **方法**: `POST`
+- **需要认证**: 是
+- **Content-Type**: `application/json`
+
+#### 请求参数
+| 参数名   | 类型   | 必填 | 说明                                      |
+|----------|--------|------|------------------------------------------|
+| messages | array  | 是   | 消息列表，包含角色和内容                  |
+| sessionId | string | 否   | 会话ID，不提供则创建新会话               |
+
+每条消息的格式：
+```json
+{
+  "role": "user",
+  "content": "问题内容"
+}
+```
+
+其中`role`字段可以是以下值：
+- `user`：用户消息
+- `assistant`：AI助手回复消息
+- `system`：系统指令（通常不需要手动添加，系统会自动添加农业知识助手的角色设定）
+
+#### 备注
+1. 系统会自动为每次对话添加农业知识助手的角色设定提示，无需用户手动添加
+2. 当提供sessionId时，服务器会从Redis获取历史对话，只需在messages中提供最新一条用户消息
+3. 当未提供sessionId时，会创建新会话并返回sessionId
+4. 服务器会自动管理会话消息数量，超出限制时会自动清理最早的消息（保留系统提示）
+5. **重要**: 系统使用`req.userData.userId`获取用户ID，JWT令牌中应包含`userId`字段作为用户标识符
+6. 会话ID的格式为`{userId}_{uuid}`，前端可通过此格式识别会话所属用户
+
+#### 请求示例（无会话ID，创建新会话）
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "水稻常见的病虫害有哪些？如何防治？"
+    }
+  ]
+}
+```
+
+#### 请求示例（有会话ID，使用已有会话）
+```json
+{
+  "sessionId": "1_a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "谢谢，那么播种时间和密度应该如何把握？"
+    }
+  ]
+}
+```
+
+#### 特殊请求
+如果使用GET方法，可以通过EventSource API进行流式获取AI回复：
+
+```javascript
+// 示例：使用EventSource接收流式回复
+const messages = [
+  { role: "user", content: "水稻常见的病虫害有哪些？" }
+];
+const token = "您的JWT令牌"; // 令牌中应包含userId字段作为用户标识
+const sessionId = "1_a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6"; // 可选
+const encodedMessages = encodeURIComponent(JSON.stringify(messages));
+let url = `/api/ai/chat/stream?messages=${encodedMessages}&token=${token}`;
+
+// 如果有会话ID，添加到URL
+if (sessionId) {
+  url += `&sessionId=${sessionId}`;
+}
+
+const eventSource = new EventSource(url);
+
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  if (data.type === 'start') {
+    // 开始回复，获取会话ID
+    console.log('开始回复，会话ID:', data.sessionId);
+  } else if (data.type === 'update') {
+    // 增量更新内容
+    console.log('收到内容片段:', data.content);
+    // 累积的完整内容
+    console.log('当前完整内容:', data.fullContent);
+  } else if (data.type === 'end') {
+    // 回复结束
+    console.log('回复结束，完整内容:', data.fullContent);
+    eventSource.close();
+  } else if (data.type === 'error') {
+    // 发生错误
+    console.error('错误:', data.error);
+    eventSource.close();
+  }
+};
+
+eventSource.onerror = (error) => {
+  console.error('EventSource错误:', error);
+  eventSource.close();
+};
+```
