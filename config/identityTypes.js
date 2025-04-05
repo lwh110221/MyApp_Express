@@ -15,9 +15,11 @@ const IdentityTypes = {
     code: 'FARMER',
     name: '农户',
     needCertification: true,
-    validityDays: 365,
+    validityDays: 40,
     certificationRequirements: {
-      requiredFields: ['idCard'],
+      requiredFields: [
+        'idCard'
+      ],
       description: '需要提供身份证'
     }
   },
@@ -26,9 +28,12 @@ const IdentityTypes = {
     code: 'DEALER',
     name: '经销商',
     needCertification: true,
-    validityDays: 365,
+    validityDays: 60,
     certificationRequirements: {
-      requiredFields: ['businessLicense', 'foodPermit'],
+      requiredFields: [
+        'businessLicense',
+        'foodPermit'
+      ],
       description: '需要提供营业执照和食品经营许可证'
     }
   },
@@ -39,10 +44,29 @@ const IdentityTypes = {
     needCertification: true,
     validityDays: 365,
     certificationRequirements: {
-      requiredFields: ['professionalCert', 'workProof'],
+      requiredFields: [
+        'professionalCert',
+        'workProof'
+      ],
       description: '需要提供职称证书和工作证明'
     }
-  }
+  },
+  
+  BROTHER: {
+    code: 'BROTHER',
+    name: '哥哥',
+    isDefault: false,
+    needCertification: true,
+    validityDays: 30,
+    certificationRequirements: {
+      requiredFields: [
+        'brotherCert',
+        'cet'
+      ],
+      description: '需要哥哥证'
+    }
+  },
+  
 };
 
 // 获取所有需要认证的身份类型
@@ -65,4 +89,4 @@ module.exports = {
   getCertificationRequiredTypes,
   getIdentityTypeInfo,
   isValidIdentityType
-}; 
+};

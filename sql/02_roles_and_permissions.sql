@@ -34,6 +34,13 @@ INSERT INTO permissions (name, code, description) VALUES
 ('身份统计信息', 'identity:stats', '查看身份认证统计信息'),
 ('身份类型管理', 'identity:type:manage', '管理身份类型配置');
 
+-- 求助/专家问答管理相关权限
+INSERT INTO permissions (name, code, description) VALUES 
+('求助分类管理', 'help:category:manage', '管理求助分类（增删改查）'),
+('求助帖子管理', 'help:post:manage', '管理求助帖子（查看、更新状态等）'),
+('求助回答管理', 'help:answer:manage', '管理求助回答（审核、删除等）'),
+('求助统计信息', 'help:stats', '查看求助相关统计信息');
+
 -- 社区相关权限
 INSERT INTO permissions (name, code, description) VALUES 
 ('社区帖子管理', 'community:post:manage', '管理社区帖子（审核、删除等）'),

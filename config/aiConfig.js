@@ -1,6 +1,5 @@
-// AI模型配置
 module.exports = {
-  // 星火大模型配置
+  // 星火配置
   spark: {
     appId: process.env.SPARK_APP_ID || '',
     apiKey: process.env.SPARK_API_KEY || '',

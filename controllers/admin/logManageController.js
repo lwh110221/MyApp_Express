@@ -28,7 +28,6 @@ class LogManageController {
             );
             const total = countResult[0].total;
 
-            // 获取日志列表
             const [logs] = await pool.query(
                 `SELECT l.*, a.username as admin_username
                 FROM admin_operation_logs l

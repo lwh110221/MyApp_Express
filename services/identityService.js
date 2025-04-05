@@ -302,69 +302,6 @@ class IdentityService {
   }
 
   /**
-   * 创建新的身份类型
-   * @param {Object} typeData - 身份类型数据
-   * @returns {Promise<Object>} 创建结果
-   */
-  async createIdentityType(typeData) {
-    try {
-      // 验证身份类型代码是否已存在
-      if (IdentityTypes[typeData.code]) {
-        throw new Error(`身份类型代码 ${typeData.code} 已存在`);
-      }
-
-      // 读取身份类型配置文件
-      const configPath = path.resolve(__dirname, '../config/identityTypes.js');
-      let configContent = fs.readFileSync(configPath, 'utf8');
-
-      // 准备新的身份类型对象
-      const newType = {
-        code: typeData.code,
-        name: typeData.name,
-        isDefault: !!typeData.isDefault,
-        needCertification: !!typeData.needCertification
-      };
-
-      // 如果需要认证，则添加认证相关字段
-      if (newType.needCertification) {
-        newType.validityDays = typeData.validityDays || 365;
-        newType.certificationRequirements = {
-          requiredFields: typeData.requiredFields || [],
-          description: typeData.description || ''
-        };
-      }
-
-      // 将新的身份类型添加到配置中
-      const typeString = JSON.stringify(newType, null, 2)
-        .replace(/"([^"]+)":/g, '$1:')  // 将 "key": 转换为 key:
-        .replace(/"/g, "'");  // 将双引号转换为单引号
-
-      // 在配置文件中找到适当的位置插入新的身份类型
-      const insertPos = configContent.indexOf('module.exports');
-      if (insertPos === -1) {
-        throw new Error('无法在配置文件中找到合适的插入位置');
-      }
-
-      const insertContent = `  ${typeData.code}: ${typeString},\n\n`;
-      const updatedContent = configContent.slice(0, insertPos)
-        + insertContent
-        + configContent.slice(insertPos);
-
-      // 写入更新后的配置文件
-      fs.writeFileSync(configPath, updatedContent, 'utf8');
-
-      // 重新加载配置
-      delete require.cache[require.resolve('../config/identityTypes')];
-      const updatedConfig = require('../config/identityTypes');
-
-      return updatedConfig.IdentityTypes[typeData.code];
-    } catch (error) {
-      console.error('创建身份类型错误:', error);
-      throw error;
-    }
-  }
-
-  /**
    * 更新身份类型配置
    * @param {string} code - 身份类型代码
    * @param {Object} typeData - 更新的身份类型数据
@@ -377,22 +314,21 @@ class IdentityService {
         throw new Error(`身份类型 ${code} 不存在`);
       }
 
-      // 读取身份类型配置文件
-      const configPath = path.resolve(__dirname, '../config/identityTypes.js');
-      let configContent = fs.readFileSync(configPath, 'utf8');
-
+      // 读取所有身份类型
+      const allTypes = { ...IdentityTypes };
+      
       // 准备更新后的身份类型对象
-      const updatedType = {
-        code, // 保持代码不变
+      allTypes[code] = {
+        code,
         name: typeData.name || IdentityTypes[code].name,
         isDefault: typeData.isDefault !== undefined ? !!typeData.isDefault : IdentityTypes[code].isDefault,
         needCertification: typeData.needCertification !== undefined ? !!typeData.needCertification : IdentityTypes[code].needCertification
       };
 
       // 如果需要认证，则更新认证相关字段
-      if (updatedType.needCertification) {
-        updatedType.validityDays = typeData.validityDays || IdentityTypes[code].validityDays || 365;
-        updatedType.certificationRequirements = {
+      if (allTypes[code].needCertification) {
+        allTypes[code].validityDays = typeData.validityDays || IdentityTypes[code].validityDays || 365;
+        allTypes[code].certificationRequirements = {
           requiredFields: typeData.requiredFields || 
             (IdentityTypes[code].certificationRequirements ? IdentityTypes[code].certificationRequirements.requiredFields : []),
           description: typeData.description || 
@@ -400,17 +336,12 @@ class IdentityService {
         };
       }
 
-      // 将更新后的身份类型转换为字符串
-      const typeString = JSON.stringify(updatedType, null, 2)
-        .replace(/"([^"]+)":/g, '$1:')  // 将 "key": 转换为 key:
-        .replace(/"/g, "'");  // 将双引号转换为单引号
-
-      // 在配置文件中找到该身份类型并替换
-      const regex = new RegExp(`\\s+${code}:\\s*\\{[\\s\\S]*?\\},?\\s*`, 'g');
-      const updatedContent = configContent.replace(regex, `  ${code}: ${typeString},\n\n`);
+      // 生成新的配置文件内容
+      const configPath = path.resolve(__dirname, '../config/identityTypes.js');
+      const fileContent = this.generateIdentityTypesFile(allTypes);
 
       // 写入更新后的配置文件
-      fs.writeFileSync(configPath, updatedContent, 'utf8');
+      fs.writeFileSync(configPath, fileContent, 'utf8');
 
       // 重新加载配置
       delete require.cache[require.resolve('../config/identityTypes')];
@@ -419,6 +350,56 @@ class IdentityService {
       return updatedConfig.IdentityTypes[code];
     } catch (error) {
       console.error('更新身份类型错误:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 创建新的身份类型
+   * @param {Object} typeData - 身份类型数据
+   * @returns {Promise<Object>} 创建结果
+   */
+  async createIdentityType(typeData) {
+    try {
+      // 验证身份类型代码是否已存在
+      if (IdentityTypes[typeData.code]) {
+        throw new Error(`身份类型代码 ${typeData.code} 已存在`);
+      }
+
+      // 读取所有身份类型
+      const allTypes = { ...IdentityTypes };
+      
+      // 准备新的身份类型对象
+      allTypes[typeData.code] = {
+        code: typeData.code,
+        name: typeData.name,
+        isDefault: !!typeData.isDefault,
+        needCertification: !!typeData.needCertification
+      };
+
+      // 如果需要认证，则添加认证相关字段
+      if (allTypes[typeData.code].needCertification) {
+        allTypes[typeData.code].validityDays = typeData.validityDays || 365;
+        allTypes[typeData.code].certificationRequirements = {
+          requiredFields: typeData.requiredFields || [],
+          description: typeData.description || ''
+        };
+      }
+
+      // 生成新的配置文件内容
+      const configPath = path.resolve(__dirname, '../config/identityTypes.js');
+      const fileContent = this.generateIdentityTypesFile(allTypes);
+
+      // 写入更新后的配置文件
+      fs.writeFileSync(configPath, fileContent, 'utf8');
+
+      // 重新加载配置
+      delete require.cache[require.resolve('../config/identityTypes')];
+      const updatedConfig = require('../config/identityTypes');
+
+      return updatedConfig.IdentityTypes[typeData.code];
+    } catch (error) {
+      console.error('创建身份类型错误:', error);
       throw error;
     }
   }
@@ -460,16 +441,18 @@ class IdentityService {
         throw new Error(`该身份类型有 ${certCount.count} 个待审核申请，不能删除`);
       }
 
-      // 读取身份类型配置文件
-      const configPath = path.resolve(__dirname, '../config/identityTypes.js');
-      let configContent = fs.readFileSync(configPath, 'utf8');
+      // 读取所有身份类型
+      const allTypes = { ...IdentityTypes };
+      
+      // 删除指定身份类型
+      delete allTypes[code];
 
-      // 在配置文件中找到该身份类型并删除
-      const regex = new RegExp(`\\s+${code}:\\s*\\{[\\s\\S]*?\\},?\\s*`, 'g');
-      const updatedContent = configContent.replace(regex, '');
+      // 生成新的配置文件内容
+      const configPath = path.resolve(__dirname, '../config/identityTypes.js');
+      const fileContent = this.generateIdentityTypesFile(allTypes);
 
       // 写入更新后的配置文件
-      fs.writeFileSync(configPath, updatedContent, 'utf8');
+      fs.writeFileSync(configPath, fileContent, 'utf8');
 
       // 重新加载配置
       delete require.cache[require.resolve('../config/identityTypes')];
@@ -480,6 +463,100 @@ class IdentityService {
       console.error('删除身份类型错误:', error);
       throw error;
     }
+  }
+
+  /**
+   * 生成身份类型配置文件内容
+   * @param {Object} types - 身份类型对象
+   * @returns {string} 文件内容
+   */
+  generateIdentityTypesFile(types) {
+    // 开始文件内容
+    let content = `/**
+ * 身份类型配置
+ */
+const IdentityTypes = {
+`;
+
+    // 添加每个身份类型
+    Object.keys(types).forEach(code => {
+      const type = types[code];
+      
+      // 添加注释
+      if (code === 'NORMAL') {
+        content += '  // 基础身份\n';
+      } else if (!content.includes('// 认证身份')) {
+        content += '  // 认证身份\n';
+      }
+      
+      // 开始身份类型定义
+      content += `  ${code}: {\n`;
+      content += `    code: '${type.code}',\n`;
+      content += `    name: '${type.name}',\n`;
+      
+      // 添加isDefault属性（如果有）
+      if (type.isDefault !== undefined) {
+        content += `    isDefault: ${type.isDefault},\n`;
+      }
+      
+      // 添加needCertification属性
+      content += `    needCertification: ${type.needCertification}`;
+      
+      // 如果需要认证，添加认证相关属性
+      if (type.needCertification) {
+        content += `,\n    validityDays: ${type.validityDays || 365}`;
+        
+        if (type.certificationRequirements) {
+          content += `,\n    certificationRequirements: {\n`;
+          
+          // 添加requiredFields
+          content += `      requiredFields: [\n`;
+          if (type.certificationRequirements.requiredFields && type.certificationRequirements.requiredFields.length > 0) {
+            type.certificationRequirements.requiredFields.forEach((field, index) => {
+              content += `        '${field}'`;
+              if (index < type.certificationRequirements.requiredFields.length - 1) {
+                content += ',';
+              }
+              content += '\n';
+            });
+          }
+          content += `      ],\n`;
+          
+          // 添加description
+          content += `      description: '${type.certificationRequirements.description || ''}'\n`;
+          content += `    }`;
+        }
+      }
+      
+      content += `\n  },\n  \n`;
+    });
+
+    // 结束身份类型定义并添加工具函数
+    content += `};
+
+// 获取所有需要认证的身份类型
+const getCertificationRequiredTypes = () => {
+  return Object.values(IdentityTypes).filter(type => type.needCertification);
+};
+
+// 获取身份类型信息
+const getIdentityTypeInfo = (code) => {
+  return IdentityTypes[code] || null;
+};
+
+// 验证身份类型是否有效
+const isValidIdentityType = (code) => {
+  return !!IdentityTypes[code];
+};
+
+module.exports = {
+  IdentityTypes,
+  getCertificationRequiredTypes,
+  getIdentityTypeInfo,
+  isValidIdentityType
+};`;
+
+    return content;
   }
 }
 

@@ -14,13 +14,10 @@ const communityManageRoutes = require('./communityManageRoutes');
 const tagManageRoutes = require('./tagManageRoutes');
 const roleManageRoutes = require('./roleManageRoutes');
 
-// 注册路由
 router.use('/auth', authRoutes);
 
-// 添加全局管理员认证中间件（除了 /auth 路由外）
 router.use(verifyAdminToken);
 
-// 需要认证的路由
 router.use('/admins', adminManageRoutes);
 router.use('/roles', roleManageRoutes);
 router.use('/users', userManageRoutes);
