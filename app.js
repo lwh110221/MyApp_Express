@@ -21,6 +21,7 @@ const helpRoutes = require('./routes/helpRoutes');
 const helpManageRoutes = require('./routes/admin/helpManageRoutes');
 const communityRoutes = require('./routes/communityRoutes');
 const communityManageRoutes = require('./routes/admin/communityManageRoutes');
+const productManageRoutes = require('./routes/admin/productRoutes');
 const logRoutes = require('./routes/logRoutes');
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
@@ -98,7 +99,7 @@ app.use(cors({
     return callback(null, true);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -151,6 +152,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/help', helpManageRoutes);
 app.use('/api/admin/community', communityManageRoutes);
+app.use('/api/admin/product', productManageRoutes);
 
 // 处理没有/api前缀的请求（临时兼容）
 app.use('/users', (req, res, next) => {

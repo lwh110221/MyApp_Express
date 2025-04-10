@@ -49,10 +49,34 @@ INSERT INTO permissions (name, code, description) VALUES
 ('社区用户关系管理', 'user:relation:manage', '管理用户关注关系'),
 ('用户积分管理', 'user:points:manage', '管理用户积分记录');
 
+-- 产品管理权限
+INSERT INTO permissions (name, code, description) VALUES
+('查看产品分类', 'product:category:view', '允许查看所有产品分类'),
+('创建产品分类', 'product:category:create', '允许创建新的产品分类'),
+('删除产品分类', 'product:category:delete', '允许删除产品分类'),
+('查看产品', 'product:view', '允许查看所有产品'),
+('更新产品', 'product:update', '允许更新产品信息，包括上架/下架状态'),
+('删除产品', 'product:delete', '允许删除产品');
+
 -- 为超级管理员角色分配所有权限
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 1, id FROM permissions;
 
 -- 为管理员角色分配基础权限（除了管理员管理和身份类型管理权限）
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT 2, id FROM permissions WHERE code NOT LIKE 'admin:%' AND code != 'identity:type:manage'; 
+SELECT 2, id FROM permissions WHERE code NOT LIKE 'admin:%' AND code != 'identity:type:manage';
+
+-- 为管理员角色添加产品管理权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 
+    (SELECT id FROM roles WHERE code = 'admin'), 
+    id 
+FROM permissions 
+WHERE code IN (
+    'product:category:view',
+    'product:category:create',
+    'product:category:delete',
+    'product:view',
+    'product:update',
+    'product:delete'
+); 

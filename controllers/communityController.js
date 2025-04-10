@@ -789,15 +789,18 @@ class CommunityController extends BaseController {
                     p.*,
                     u.username as author_name,
                     up.profile_picture as author_avatar
-                FROM community_posts p
-                JOIN community_post_tags pt ON p.id = pt.post_id
-                JOIN community_tags t ON pt.tag_id = t.id
+                FROM (
+                    SELECT DISTINCT p.id, p.user_id, p.title, p.content, p.images, p.status, p.created_at, p.updated_at
+                    FROM community_posts p
+                    JOIN community_post_tags pt ON p.id = pt.post_id
+                    JOIN community_tags t ON pt.tag_id = t.id
+                    WHERE p.status = 1 AND t.name = ?
+                    ORDER BY p.created_at DESC
+                    LIMIT ? OFFSET ?
+                ) p
                 LEFT JOIN users u ON p.user_id = u.id
                 LEFT JOIN user_profiles up ON u.id = up.user_id
-                WHERE p.status = 1 AND t.name = ?
-                GROUP BY p.id
-                ORDER BY p.created_at DESC
-                LIMIT ? OFFSET ?`,
+                ORDER BY p.created_at DESC`,
                 [tagName, parseInt(limit), offset]
             );
 
