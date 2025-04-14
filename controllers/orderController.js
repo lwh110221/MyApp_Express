@@ -292,6 +292,7 @@ class OrderController extends BaseController {
           o.id, o.order_no, o.total_amount, o.status,
           o.contact_name, o.contact_phone, o.address, o.note,
           o.payment_method, o.payment_time, o.shipping_time, 
+          o.tracking_number, o.shipping_company,
           o.completion_time, o.created_at, o.updated_at
          FROM orders o
          WHERE o.id = ? AND o.user_id = ?`,
@@ -776,7 +777,8 @@ class OrderController extends BaseController {
           o.id, o.order_no, o.total_amount, o.status, 
           o.contact_name, o.contact_phone, o.address,
           o.payment_method, o.payment_time, o.created_at,
-          o.shipping_time, o.completion_time
+          o.shipping_time, o.tracking_number, o.shipping_company,
+          o.completion_time
         FROM orders o
         JOIN order_items oi ON o.id = oi.order_id
         JOIN products p ON oi.product_id = p.id
@@ -869,6 +871,7 @@ class OrderController extends BaseController {
           o.id, o.order_no, o.total_amount, o.status,
           o.contact_name, o.contact_phone, o.address, o.note,
           o.payment_method, o.payment_time, o.shipping_time, 
+          o.tracking_number, o.shipping_company,
           o.completion_time, o.created_at, o.updated_at
          FROM orders o
          WHERE o.id = ?`,
