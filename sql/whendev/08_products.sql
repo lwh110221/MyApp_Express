@@ -9,6 +9,7 @@ CREATE TABLE `product_categories` (
   `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  FOREIGN KEY (`parent_id`) REFERENCES `product_categories`(`id`) ON DELETE SET NULL,
   INDEX `idx_parent` (`parent_id`),
   INDEX `idx_status` (`status`),
   INDEX `idx_sort` (`sort_order`)

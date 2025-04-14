@@ -9,7 +9,7 @@ CREATE TABLE `users` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '用户账号创建时间，默认取当前时间',
     INDEX `idx_username` (`username`),
     INDEX `idx_email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
 -- 用户资料表
 CREATE TABLE `user_profiles` (
@@ -19,7 +19,7 @@ CREATE TABLE `user_profiles` (
     `profile_picture` VARCHAR(255) COMMENT '用户头像图片的链接地址',
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
     INDEX `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户资料表';
 
 -- 用户动态表
 CREATE TABLE `user_moments` (
@@ -30,7 +30,7 @@ CREATE TABLE `user_moments` (
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_created_at` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户动态表';
 
 -- 动态图片表
 CREATE TABLE `moment_images` (
@@ -40,7 +40,7 @@ CREATE TABLE `moment_images` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
     FOREIGN KEY (`moment_id`) REFERENCES `user_moments`(`id`) ON DELETE CASCADE,
     INDEX `idx_moment_id` (`moment_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='动态图片表';
 
 -- 管理员表
 CREATE TABLE `admins` (
@@ -54,38 +54,38 @@ CREATE TABLE `admins` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX `idx_admin_username` (`username`),
     INDEX `idx_admin_email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员表';
 
 -- 角色表
 CREATE TABLE IF NOT EXISTS roles (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '角色ID',
     name VARCHAR(50) NOT NULL COMMENT '角色名称',
     code VARCHAR(50) NOT NULL COMMENT '角色编码',
     description VARCHAR(200) COMMENT '角色描述',
     status TINYINT(1) DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY uk_code (code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色表';
 
 -- 权限表
 CREATE TABLE IF NOT EXISTS permissions (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '权限ID',
     name VARCHAR(50) NOT NULL COMMENT '权限名称',
     code VARCHAR(50) NOT NULL COMMENT '权限编码',
     description VARCHAR(200) COMMENT '权限描述',
     status TINYINT(1) DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY uk_code (code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限表';
 
 -- 管理员角色关联表
 CREATE TABLE IF NOT EXISTS admin_roles (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '关联ID',
     admin_id BIGINT NOT NULL COMMENT '管理员ID',
     role_id BIGINT NOT NULL COMMENT '角色ID',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     UNIQUE KEY uk_admin_role (admin_id, role_id),
     FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
@@ -93,10 +93,10 @@ CREATE TABLE IF NOT EXISTS admin_roles (
 
 -- 角色权限关联表
 CREATE TABLE IF NOT EXISTS role_permissions (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '关联ID',
     role_id BIGINT NOT NULL COMMENT '角色ID',
     permission_id BIGINT NOT NULL COMMENT '权限ID',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     UNIQUE KEY uk_role_permission (role_id, permission_id),
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
     FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
@@ -162,15 +162,15 @@ CREATE TABLE `news_articles` (
 
 -- 用户身份表
 CREATE TABLE IF NOT EXISTS user_identities (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '身份ID',
   user_id BIGINT NOT NULL COMMENT '用户ID',
   identity_type VARCHAR(50) NOT NULL COMMENT '身份类型编码',
   status TINYINT DEFAULT 1 COMMENT '状态：0-无效 1-有效',
   certification_time DATETIME COMMENT '认证时间',
   expiration_time DATETIME COMMENT '过期时间',
   meta_data JSON COMMENT '身份扩展信息',
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   UNIQUE KEY `uk_user_identity` (`user_id`, `identity_type`),
   INDEX `idx_identity_status` (`identity_type`, `status`),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS user_identities (
 
 -- 身份认证记录表
 CREATE TABLE IF NOT EXISTS identity_certifications (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '认证记录ID',
   user_id BIGINT NOT NULL COMMENT '用户ID',
   identity_type VARCHAR(50) NOT NULL COMMENT '身份类型编码',
   status TINYINT DEFAULT 0 COMMENT '状态：0-待审核 1-通过 2-拒绝',
@@ -186,12 +186,22 @@ CREATE TABLE IF NOT EXISTS identity_certifications (
   review_comment TEXT COMMENT '审核意见',
   reviewer_id BIGINT COMMENT '审核人ID',
   review_time DATETIME COMMENT '审核时间',
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX `idx_user_status` (`user_id`, `status`),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (reviewer_id) REFERENCES admins(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='身份认证记录表';
+
+-- 求助分类表
+CREATE TABLE `help_categories` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '分类ID',
+    `name` VARCHAR(50) NOT NULL COMMENT '分类名称',
+    `description` VARCHAR(200) COMMENT '分类描述',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    INDEX `idx_sort` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='求助分类表';
 
 -- 求助帖子表
 CREATE TABLE `help_posts` (
@@ -206,19 +216,10 @@ CREATE TABLE `help_posts` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),
+    FOREIGN KEY (`category_id`) REFERENCES `help_categories`(`id`),
     INDEX `idx_status` (`status`),
     INDEX `idx_category` (`category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='求助帖子表';
-
--- 求助分类表
-CREATE TABLE `help_categories` (
-    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '分类ID',
-    `name` VARCHAR(50) NOT NULL COMMENT '分类名称',
-    `description` VARCHAR(200) COMMENT '分类描述',
-    `sort_order` INT DEFAULT 0 COMMENT '排序',
-    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
-    INDEX `idx_sort` (`sort_order`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='求助分类表';
 
 -- 专家回答表
 CREATE TABLE `help_answers` (
@@ -233,4 +234,4 @@ CREATE TABLE `help_answers` (
     FOREIGN KEY (`post_id`) REFERENCES `help_posts`(`id`),
     FOREIGN KEY (`expert_id`) REFERENCES `users`(`id`),
     INDEX `idx_post_expert` (`post_id`, `expert_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='专家回答表'; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='专家回答表';
