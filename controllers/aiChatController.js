@@ -94,30 +94,23 @@ exports.chat = async (req, res) => {
       return res.error('用户未认证', 401);
     }
     
-    // 验证消息格式
     if (!messages || !Array.isArray(messages)) {
       return res.error('消息格式不正确', 400);
     }
     
-    // 处理会话
     if (sessionId) {
-      // 验证会话是否存在及所有权
       const session = await chatSessionService.getSession(sessionId);
       if (!session || session.userId !== userId) {
         return res.error('无效的会话ID或无权限', 403);
       }
       
-      // 获取会话中的历史消息
       const historyMessages = await chatSessionService.getMessages(sessionId);
       
-      // 只发送最新一条用户消息，但使用完整的历史记录
       const latestMessage = messages[messages.length - 1];
       messages = historyMessages || [];
       
-      // 确保最新消息被添加到历史消息列表
       messages.push(latestMessage);
     } else {
-      // 创建新会话
       sessionId = await chatSessionService.createSession(userId);
     }
     
@@ -128,7 +121,6 @@ exports.chat = async (req, res) => {
     res.setHeader('X-Accel-Buffering', 'no'); // 禁用Nginx缓冲
     res.setHeader('Transfer-Encoding', 'chunked'); // 使用分块传输编码
     
-    // CORS头部 - 确保与前端域匹配
     const allowedOrigin = req.headers.origin || '*';
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -137,24 +129,21 @@ exports.chat = async (req, res) => {
     // 禁用response缓冲
     res.flushHeaders();
     
-    // 响应初始化，包含sessionId
     res.write(`data: ${JSON.stringify({ 
       type: 'start',
       sessionId 
     })}\n\n`);
     
-    let fullContent = ''; // 用于累积完整的响应内容
-    let aiResponse = { role: 'assistant', content: '' }; // AI响应消息
+    let fullContent = ''; 
+    let aiResponse = { role: 'assistant', content: '' };
     
-    // 使用星火服务进行聊天，流式返回结果
     sparkService.streamChat(
       messages,
       (content) => {
-        // 累积内容
         fullContent += content;
         aiResponse.content = fullContent;
         
-        // 发送增量数据 - 确保格式严格符合SSE规范
+        // 发送增量数据SSE规范
         res.write(`data: ${JSON.stringify({ 
           type: 'update',
           content: content,
@@ -162,13 +151,11 @@ exports.chat = async (req, res) => {
           sessionId
         })}\n\n`);
         
-        // 立即刷新响应，确保不缓冲
         if (res.flush) {
           res.flush();
         }
       },
       async (error) => {
-        // 发送错误
         console.error('聊天出错:', error);
         res.write(`data: ${JSON.stringify({ 
           type: 'error',
@@ -178,18 +165,14 @@ exports.chat = async (req, res) => {
         res.end();
       },
       async () => {
-        // 将用户消息和AI回复保存到会话
         const userMessage = messages[messages.length - 1];
         
-        // 保存用户消息和AI回复到Redis
         if (userMessage.role === 'user') {
           await chatSessionService.addMessage(sessionId, userMessage);
         }
         
-        // 保存AI回复
         await chatSessionService.addMessage(sessionId, aiResponse);
         
-        // 结束响应
         res.write(`data: ${JSON.stringify({ 
           type: 'end',
           fullContent: fullContent,
@@ -209,7 +192,6 @@ exports.getSessionMessages = async (req, res) => {
     const { sessionId } = req.params;
     const userId = req.userData.userId;
     
-    // 验证会话所有权
     const session = await chatSessionService.getSession(sessionId);
     if (!session || session.userId !== userId) {
       return res.error('无效的会话或无权限', 403);
