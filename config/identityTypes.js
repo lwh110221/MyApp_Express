@@ -52,21 +52,6 @@ const IdentityTypes = {
     }
   },
   
-  BROTHER: {
-    code: 'BROTHER',
-    name: '哥哥',
-    isDefault: false,
-    needCertification: true,
-    validityDays: 30,
-    certificationRequirements: {
-      requiredFields: [
-        'brotherCert',
-        'cet'
-      ],
-      description: '需要哥哥证'
-    }
-  },
-  
 };
 
 // 获取所有需要认证的身份类型

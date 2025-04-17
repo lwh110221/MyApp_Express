@@ -1,8 +1,8 @@
 -- 初始数据
 -- 插入测试用户数据
 INSERT INTO users (username, password, email, points, status) VALUES
-('testuser1', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'test1@example.com', 100, 1),
-('expert1', '$2a$10$wpd59N.CfSbDUEj2nJmuh.3BCe4Dsd923EPw8zO6sYH5Qoqdc9vQS', 'expert1@example.com', 200, 1);
+('老百姓', '$2a$10$UOFsUssH5GwPGL1zUeUTCe8wIGTbn4nQ0Ups7Jxd/tnK2djeDIDMa', 'test@a.com', 100, 1),
+('专家', '$2a$10$UOFsUssH5GwPGL1zUeUTCe8wIGTbn4nQ0Ups7Jxd/tnK2djeDIDMa', 'expert@a.com', 200, 1);
 
 -- 插入用户资料
 INSERT INTO user_profiles (user_id, bio) VALUES
@@ -42,10 +42,6 @@ INSERT INTO help_categories (name, description, sort_order) VALUES
 INSERT INTO user_identities (user_id, identity_type, status, certification_time, expiration_time, meta_data) VALUES
 (2, 'EXPERT', 1, NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR), '{"specialty": "农学", "title": "高级农艺师", "years": 10}');
 
--- 添加测试求助帖子
-INSERT INTO help_posts (user_id, title, content, category_id, status, view_count) VALUES
-(1, '玉米苗期发黄怎么处理？', '最近种植的玉米苗期出现大面积发黄现象，请问可能是什么原因导致的？该如何处理？', 1, 1, 0),
-(1, '水稻纹枯病如何防治', '水稻出现纹枯病症状，面积较大，求专业的防治方案。', 2, 1, 0);
 
 -- 添加测试动态
 INSERT INTO user_moments (user_id, content) VALUES
@@ -59,13 +55,3 @@ INSERT INTO community_tags (name, status) VALUES
 ('病虫害防治', 1),
 ('政策解读', 1),
 ('农产品交流', 1);
-
--- 添加测试社区帖子
-INSERT INTO community_posts (user_id, title, content, view_count, tags) VALUES
-(1, '分享我的蔬菜种植经验', '今年种植的蔬菜产量翻倍，分享一下我的经验...', 5, '[1, 2]'),
-(2, '新型杀虫剂使用指南', '作为专业人士，我来分享一下新型杀虫剂的科学使用方法...', 10, '[3]');
-
--- 添加测试产品
-INSERT INTO products (user_id, category_id, title, description, price, original_price, stock, unit, location, is_featured) VALUES
-(1, 1, '有机青菜', '纯天然有机种植的新鲜青菜，无农药残留', 5.50, 6.00, 100, '斤', '云南昆明', 1),
-(1, 2, '高原红富士苹果', '云南高原种植的红富士苹果，口感脆甜', 8.80, 10.00, 200, '斤', '云南大理', 1); 

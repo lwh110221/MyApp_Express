@@ -3,7 +3,7 @@
 # 数据库初始化脚本
 # 用法: ./init_database.sh [数据库名] [用户名] [密码]
 
-DB_NAME=${1:-"back"}
+DB_NAME=${1:-"dev"}
 DB_USER=${2:-"root"}
 DB_PASS=${3:-"11022111"}
 

@@ -60,7 +60,7 @@ INSERT INTO permissions (name, code, description) VALUES
 
 -- 初始化超级管理员账号
 INSERT INTO `admins` (`username`, `password`, `email`) VALUES 
-('admin', '$2b$10$8x6QR3lyHcyQu/8u8xenoeSSkfcfCFb0lHPPmfGjgDG4pDQSMC5iW', 'admin@example.com');
+('admin', '$2a$10$UOFsUssH5GwPGL1zUeUTCe8wIGTbn4nQ0Ups7Jxd/tnK2djeDIDMa', 'admin@admin.com');
 
 -- 为超级管理员角色分配所有权限
 INSERT INTO role_permissions (role_id, permission_id)
