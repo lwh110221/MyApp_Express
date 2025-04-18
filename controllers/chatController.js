@@ -168,21 +168,18 @@ class ChatController extends BaseController {
       
       const messageId = messageResult.insertId;
       
-      // 更新会话的最后消息和时间
       await connection.query(`
         UPDATE chat_sessions 
         SET last_message = ?, last_time = NOW(), updated_at = NOW()
         WHERE id = ?
       `, [content.substring(0, 50) + (content.length > 50 ? '...' : ''), sessionId]);
       
-      // 更新未读消息计数
       await connection.query(`
         INSERT INTO chat_unread_counts (user_id, session_id, unread_count, last_read_time) 
         VALUES (?, ?, 1, NULL)
         ON DUPLICATE KEY UPDATE unread_count = unread_count + 1
       `, [receiverId, sessionId]);
       
-      // 返回刚发送的消息
       const [newMessages] = await connection.query(`
         SELECT 
           cm.*,

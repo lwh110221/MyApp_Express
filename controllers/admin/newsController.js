@@ -10,7 +10,7 @@ const createFileCleanupMiddleware = require('../../middleware/fileCleanup');
 
 const fileCleanup = createFileCleanupMiddleware();
 
-// 配置允许的HTML标签和属性，完全支持Quill编辑器
+// 配置允许的HTML标签和属性Quill编辑器
 const sanitizeOptions = {
     allowedTags: [
         // Quill默认格式
