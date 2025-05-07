@@ -33,7 +33,6 @@ router.get('/chat/stream', (req, res) => {
       return res.status(401).json({ error: '无效的令牌' });
     }
 
-    // 从query参数中解析参数
     try {
       let messages, sessionId;
       

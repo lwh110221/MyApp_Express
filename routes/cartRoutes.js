@@ -17,7 +17,6 @@ router.post('/items',
   cartController.addToCart
 );
 
-// 更新购物车商品数量 - 需要认证
 router.put('/items/:itemId', 
   auth,
   param('itemId').isInt().withMessage('购物车商品ID必须是整数'),
@@ -26,7 +25,6 @@ router.put('/items/:itemId',
   cartController.updateCartItem
 );
 
-// 删除购物车商品 - 需要认证
 router.delete('/items/:itemId', 
   auth,
   param('itemId').isInt().withMessage('购物车商品ID必须是整数'),
@@ -34,7 +32,6 @@ router.delete('/items/:itemId',
   cartController.removeFromCart
 );
 
-// 更新购物车商品选中状态 - 需要认证
 router.put('/selected', 
   auth,
   body('selected').isBoolean().withMessage('选中状态必须是布尔值'),
@@ -43,7 +40,6 @@ router.put('/selected',
   cartController.updateCartItemSelected
 );
 
-// 清空购物车 - 需要认证
 router.delete('/', auth, cartController.clearCart);
 
 module.exports = router; 
